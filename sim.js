@@ -1,11 +1,11 @@
-import {worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,route} from './castle.js';
-export const RULES = Object.freeze({radius:59,baseRadius:8,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,maxStun:30,stunExtend:1,hp:3,target:10,teamTarget:20,winHold:60,price:15,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
+import {CASTLE,worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,route} from './castle.js';
+export const RULES = Object.freeze({radius:59,baseRadius:12,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,maxStun:30,stunExtend:1,hp:3,target:10,teamTarget:20,winHold:60,price:15,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
 export const targetScore=w=>w.mode==='solo'?RULES.target:RULES.teamTarget;
 export const COLORS=['#56b9c6','#e98b68','#b29be3','#e5bd5c','#86ba73','#62c9be','#ec9e74','#7eaad7','#ce82a0','#b6bf6e'];
 export const NAMES=Array.from({length:10},(_,i)=>'Bot-'+(i+1));
 const TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
-export function inside(p,b,margin=0){const q=localPoint(b,p);return Math.abs(q.x)<7+margin&&Math.abs(q.z)<8+margin;}
+export function inside(p,b,margin=0){const q=localPoint(b,p);return Math.abs(q.x)<CASTLE.halfX+margin&&Math.abs(q.z)<CASTLE.halfZ+margin;}
 export function castleInvaded(w,id){if(w.replicated)return id===w.me&&w.homeInvaded===true;return w.players.some(v=>!allied(w,id,v.id)&&inside(v,w.bases[id]));}
 export function angleDelta(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a));}
 export function createWorld(seed=71,options={}){
@@ -22,19 +22,21 @@ export function createWorld(seed=71,options={}){
 }
 function emit(w,type,extra={}){w.events.push({type,time:w.time,...extra});}
 export function countItems(w,id){if(w.replicated)return w.bases[id]?.count||0;return w.items.filter(i=>i.base===id&&i.holder===null).length;}
-function slotPosition(w,baseId,exclude=null){const b=w.bases[baseId],used=w.items.filter(i=>i.base===baseId&&i.id!==exclude).map(i=>i.slot);let slot=0;while(used.includes(slot))slot++;return {...roomPoint(b,slot%4,slot%3),slot};}
+function slotPosition(w,baseId,exclude=null){const b=w.bases[baseId],used=w.items.filter(i=>i.base===baseId&&i.id!==exclude).map(i=>i.slot);let slot=0;while(used.includes(slot))slot++;return {...roomPoint(b,slot%8,slot%3),slot};}
 export function addItem(w,base=null,kind=0,x=0,z=0){const place=base===null?{x,z,floor:0,slot:-1}:slotPosition(w,base);const item={id:w.nextId++,kind,base,holder:null,...place};w.items.push(item);return item;}
 export function addCoin(w,x,z,value=1,excluded=-1){const c={id:w.nextId++,x,z,value,age:0,floor:0,excluded,vx:(w.random()-.5)*5,vz:(w.random()-.5)*5};w.coins.push(c);return c;}
 export function dropHeld(w,p){if(p.held===null)return;const i=w.items.find(i=>i.id===p.held);i.holder=null;i.base=null;i.x=p.x;i.z=p.z;i.floor=p.floor||0;p.held=null;emit(w,'drop',{player:p.id,item:i.id});}
-export const clubCrate=b=>worldPoint(b,2.5,-9.5);
-export function nearClubCrate(w,p){return (p.floor||0)===0&&p.y===0&&dist(p,clubCrate(w.bases[p.id]))<1.9;}
+export const clubCrate=b=>worldPoint(b,2.5,-CASTLE.halfZ-1.5);
+// Herhangi bir kalenin kapısındaki kasadan sopa alınır (yalnız kendi kasası değil).
+export function nearClubCrate(w,p){return (p.floor||0)===0&&p.y===0&&w.bases.some(b=>dist(p,clubCrate(b))<1.9);}
+export function nearestClubCrate(w,p){return w.bases.map(clubCrate).sort((a,b)=>dist(p,a)-dist(p,b))[0];}
 export function interact(w,id){
  const p=w.players[id];if(w.winner!==null||p.stun>0)return false;
  const own=w.bases[id];
  if(!p.hasClub&&nearClubCrate(w,p)){p.hasClub=true;emit(w,'rearm',{player:id,x:p.x,z:p.z});return true;}
  if(p.held!==null){
   const i=w.items.find(i=>i.id===p.held);
-  if(inside(p,own,-.25)&&roomAt(w,p)?.room>=0){i.holder=null;i.base=id;Object.assign(i,{x:p.x,z:p.z,floor:p.floor||0,slot:-1});p.held=null;p.stats.deposits++;emit(w,'deposit',{player:id,item:i.id,x:own.x,z:own.z});}
+  if(inside(p,own,-.25)){i.holder=null;i.base=id;Object.assign(i,{x:p.x,z:p.z,floor:p.floor||0,slot:-1});p.held=null;p.stats.deposits++;emit(w,'deposit',{player:id,item:i.id,x:own.x,z:own.z});}
   else dropHeld(w,p);
   return true;
  }
@@ -103,7 +105,7 @@ function chooseGoal(w,p){
  const own=w.bases[p.id];
  if(!p.hasClub)return{type:'rearm'};
  const intruders=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&inside(v,own,-.2)).sort((a,b)=>dist(p,a)-dist(p,b));
- if(intruders.length&&dist(p,own)<18)return{type:'defend',id:intruders[0].id};
+ if(intruders.length&&dist(p,own)<CASTLE.halfZ+10)return{type:'defend',id:intruders[0].id};
  if(p.held!==null||countItems(w,p.id)>=RULES.target)return{type:'home'};
  if(w.claimant!==null&&!allied(w,p.id,w.claimant)){const rivals=w.bases.filter(b=>!allied(w,p.id,b.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));const b=rivals[0];if(p.goal?.type==='search'&&p.goal.base===b.id)return p.goal;return{type:'search',base:b.id,room:Math.floor(w.random()*4),floor:Math.floor(w.random()*3)};}
  if(p.gold>=RULES.price)return{type:'buy'};
@@ -128,7 +130,7 @@ function updateBot(w,p,dt){
  p.botThink-=dt;if(p.botThink<=0||!p.goal){p.goal=chooseGoal(w,p);p.botThink=.35+w.random()*.25;}
  const g=p.goal,own=w.bases[p.id];let target=null;
  if(g.type==='home'||g.type==='buy'){target=roomPoint(own,p.id%4,p.id%3);if(dist(p,target)<.8&&(p.floor||0)===target.floor){if(p.held!==null)interact(w,p.id);if(p.gold>=RULES.price)buy(w,p.id);p.goal=null;}}
- if(g.type==='rearm'){target=clubCrate(own);if(nearClubCrate(w,p)){interact(w,p.id);p.goal=null;}}
+ if(g.type==='rearm'){target=nearestClubCrate(w,p);if(nearClubCrate(w,p)){interact(w,p.id);p.goal=null;}}
  if(g.type==='tree'){const a=p.id*Math.PI*2/w.players.length;target={x:Math.sin(a)*2.65,z:Math.cos(a)*2.65,floor:0};if(dist(p,{x:0,z:0})<3.3)melee(w,p.id,{x:0,z:0});}
  if(g.type==='search'){const b=w.bases[g.base];target=roomPoint(b,g.room,g.floor);if(dist(p,target)<.7&&(p.floor||0)===g.floor){g.room++;if(g.room>=4){g.room=0;g.floor=(g.floor+1)%3;}p.botThink=0;}}
  if(g.type==='rob'){target=w.players[g.id];if(target.gold<15||!visibleTo(w,p,target)||inside(target,w.bases[target.id])){p.goal=null;target=null;}}

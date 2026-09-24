@@ -40,8 +40,9 @@ export class GameView{
  }
  buildBase(b){
   const p=new T.Group();p.position.set(b.x,0,b.z);p.rotation.y=b.angle||0;this.scene.add(p);
-  this.box(15,.24,17,'#a9ac99',0,0,0,p);
-  const crate=new T.Group();crate.position.set(2.5,0,-9.5);p.add(crate);
+  const HX=CASTLE.halfX,HZ=CASTLE.halfZ;
+  this.box(HX*2+1,.24,HZ*2+1,'#a9ac99',0,0,0,p);
+  const crate=new T.Group();crate.position.set(2.5,0,-HZ-1.5);p.add(crate);
   this.box(1.5,.15,1.1,'#765035',0,.15,0,crate);
   for(const z of [-.52,.52])this.box(1.6,.75,.12,'#a97947',0,.55,z,crate);
   for(const x of [-.73,.73])this.box(.12,.75,1.1,'#92663d',x,.55,0,crate);
@@ -51,36 +52,30 @@ export class GameView{
    const group=new T.Group();group.position.y=floor*CASTLE.height;p.add(group);
    const parts=[],palette=new Map();
    const track=(mesh,room=-1,kind='wall')=>{const key=room+':'+kind+':'+mesh.material.color.getHex();if(!palette.has(key)){const m=mesh.material.clone();m.transparent=true;palette.set(key,m);}mesh.material=palette.get(key);parts.push({mesh,room,kind});return mesh;};
-   track(this.box(3.1,.15,15.8,'#c5b996',0,.05,0,group),-1,'floor');
-   for(let room=0;room<4;room++){
-    const x=room%2===0?-4.3:4.3,z=room<2?-4:4;
-    track(this.box(5.2,.16,7.8,['#a9ad92','#ac9e87','#afa587','#9baba4'][room],x,.06,z,group),room,'floor');
-    track(this.box(2.5,.025,3.4,this.world.players[b.id].color,x,.16,z,group),room,'decor');
-    track(this.box(1.7,1.2,.65,'#796346',x, .75,room<2?-7.2:7.2,group),room,'decor');
-    for(const yy of [.4,.85,1.3])track(this.box(1.8,.09,.72,'#bd9d6e',x,yy,room<2?-7.2:7.2,group),room,'decor');
-    track(this.cyl(.16,.7,'#f3c56b',room%2===0?-6.45:6.45,2.2,z,group),room,'decor');
-   }
+   const color=this.world.players[b.id].color;
+   track(this.box(HX*2-.3,.15,HZ*2-.3,['#a9ad92','#ac9e87','#afa587'][floor],0,.05,0,group),-1,'floor');
+   track(this.box(HX*.9,.025,HZ*.9,color,0,.14,-1,group),-1,'decor');
+   for(const x of [-HX+.9,HX-.9])for(const z of [-HZ*.55,0,HZ*.45]){track(this.box(.65,1.2,1.7,'#796346',x,.75,z,group),-1,'decor');for(const yy of [.4,.85,1.3])track(this.box(.72,.09,1.8,'#bd9d6e',x,yy,z,group),-1,'decor');}
+   for(const x of [-HX+.35,HX-.35])for(const z of [-HZ*.3,HZ*.3])track(this.cyl(.16,.7,'#f3c56b',x,2.2,z,group),-1,'decor');
    for(const w of walls({x:0,z:0},floor,false))track(this.box(w.w,3.4,w.d,'#899c98',w.x,1.8,w.z,group));
-   // Lintels mark room doors; the openings below remain walkable.
-   for(const x of [-1.6,1.6])for(const z of [-4,4])track(this.box(.34,.55,2.4,'#c4c7b1',x,3.25,z,group));
-   for(const x of [-7,7])for(const z of [-8,8]){
+   for(const x of [-HX,HX])for(const z of [-HZ,HZ]){
     track(this.cyl(1.15,3.8,'#748d8b',x,1.9,z,group));
     track(this.cyl(1.25,.18,'#b0b9a5',x,3.65,z,group));
     if(floor===2)for(let n=0;n<6;n++){const a=n*TAU/6;track(this.box(.47,.65,.47,'#a6b2a2',x+Math.sin(a),4.05,z+Math.cos(a),group));}
    }
-   if(floor===2)for(let x=-5.8;x<7;x+=1.5)for(const z of [-8,8])track(this.box(.8,.65,.65,'#b5beab',x,3.8,z,group));
-   for(const [z,color,up] of [[5.7,'#dcb56c',true]]){
+   if(floor===2)for(let x=-HX+1.2;x<HX-.6;x+=1.5)for(const z of [-HZ,HZ])track(this.box(.8,.65,.65,'#b5beab',x,3.8,z,group));
+   for(const [z,color,up] of [[CASTLE.stairZ,'#dcb56c',true]]){
     for(let n=0;n<6;n++)track(this.box(1.45,.13+n*.11,.32,color,0,.1+n*.055,z-.9+n*.32,group),-1,'stairs');
     const marker=this.mesh('cone',color,0,1.4,z,.23,.5,.23,group);if(!up)marker.rotation.z=Math.PI;track(marker,-1,'stairs');
    }
-   if(floor===2)track(this.box(13.6,.18,15.6,'#758b89',0,3.55,0,group),-1,'roof');
-   for(const z of [-8.24,8.24])for(const x of [-4.3,4.3])track(this.box(.48,1.35,.08,'#344b49',x,2,z,group));
+   if(floor===2)track(this.box(HX*2-.4,.18,HZ*2-.4,'#758b89',0,3.55,0,group),-1,'roof');
+   for(const z of [-HZ-.24,HZ+.24])for(const x of [-HX*.6,HX*.6])track(this.box(.48,1.35,.08,'#344b49',x,2,z,group));
    levels.push({group,parts});
   }
-  this.box(3.6,.55,.75,'#c6c7ad',0,3.2,-8,p);
-  const banner=this.box(1.7,2,.12,this.world.players[b.id].color,0,9.6,-8.3,p);
-  const ring=this.ring(10.4,10.5,this.world.players[b.id].color,0,0,p);ring.position.y=.03;
-  this.baseViews.push({p,levels,banner,ring,bounds:new T.Box3(new T.Vector3(b.x-12,0,b.z-12),new T.Vector3(b.x+12,12.6,b.z+12)),label:this.label(p,13,'base','')});
+  this.box(3.6,.55,.75,'#c6c7ad',0,3.2,-HZ,p);
+  const banner=this.box(1.7,2,.12,this.world.players[b.id].color,0,9.6,-HZ-.3,p);
+  const R=Math.hypot(HX,HZ)+.4,ring=this.ring(R,R+.1,this.world.players[b.id].color,0,0,p);ring.position.y=.03;
+  this.baseViews.push({p,levels,banner,ring,bounds:new T.Box3(new T.Vector3(b.x-HZ-2,0,b.z-HZ-2),new T.Vector3(b.x+HZ+2,12.6,b.z+HZ+2)),label:this.label(p,13,'base','')});
  }
  club(parent){const g=new T.Group();this.box(.16,1.05,.17,'#8c5935',0,.25,0,g);const head=this.box(.32,.57,.3,'#ad7847',0,.76,0,g);head.rotation.z=.09;for(const y of [.57,.85])this.box(.35,.075,.32,'#d4b16a',0,y,0,g);parent.add(g);return g;}
  buildActor(p){
