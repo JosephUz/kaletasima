@@ -1,0 +1,10 @@
+node_modules
+artifacts
+tests
+*.log
+.git
+update-*.mjs
+.env
+Dockerfile
+compose.yaml
+.dockerignore
