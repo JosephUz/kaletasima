@@ -1,9 +1,10 @@
 # Yerel Docker kurulumu: `docker compose up -d --build`, ardından http://localhost:5185
 # Cloudflare Tunnel (kaletasima.josephuz.com) için `--profile tunnel` ve .env içinde TUNNEL_TOKEN.
-name: demo5
+name: kaletasima
 services:
   kale-tasima:
     build: .
+    image: kale-tasima
     container_name: kale-tasima
     ports:
       - "127.0.0.1:5185:5185"

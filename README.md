@@ -1,4 +1,4 @@
-# Kale Taşıma — Demo5 / 0.3
+# Kale Taşıma — 0.3
 
 Üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş.
 
