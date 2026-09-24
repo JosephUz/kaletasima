@@ -31,10 +31,10 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 - Kale içindeyken dışarısı (açık alan) görünür; kale içindeki eşyaları ve rakipleri yalnız aynı kattayken görürsün. Üst katlar saydamdır. Kamera ile karakter arasına giren kale dışarıdayken de saydamlaşır.
 - Mini harita yoktur. Sis ve görüş mesafesi sınırı yoktur; merkezden kaleler görünür. Sağ üstte eşya sıralaması, sağ altta kendi kale bilgisi kalır.
 - Yeni altın yalnız ortadaki **altın ağacına sopa vurulunca** çıkar. Başlangıçta veya zamanla yere rastgele altın doğmaz. Vuruş başına 2 altın; yere düşmüş altın sayısı sınırlıdır.
-- Herkesin **3 canı** vardır. Sopa darbesi hiçbir yerde altın düşürmez, 1 can götürür. Can 0 olunca oyuncu **bayılır** (altın düşmez, taşıdığı eşya vurulduğu yerde kalır); bayılma bitince kendi kalesinin zemin katında canı dolu ve elinde sopayla doğar. Bu sürede kalesi korumasızdır. Takım arkadaşları birbirine zarar vermez.
+- Herkesin **3 canı** vardır. Sopa darbesi hiçbir yerde altın düşürmez, 1 can götürür. Can 0 olunca oyuncu **bayılır** (taşıdığı eşya vurulduğu yerde kalır); bayılma bitince kendi kalesinin zemin katında canı dolu ve elinde sopayla doğar. Bu sürede kalesi korumasızdır. Takım arkadaşları birbirine zarar vermez.
 - Baygın oyuncuya vurulan her sopa can götürmez, bayılmayı 1 saniye uzatır. Bir bayılma toplamda en çok **30 saniye** sürer (sahibi baygınken kale korumasızdır).
 - **Zıplarken sopa ve fırlatılan sopa isabetleri etkisizdir.** Havadayken Boşluk'a tekrar basarak ikinci kez zıplayabilirsin. İkinci basış yükselişi yeniden başlatır; üçüncü zıplama yoktur. Yere inince hakların yenilenir.
-- Fırlatılan sopa can götürmez; sersemletir, eldeki eşyayı düşürür ve rakibin elindeki altından en çok 5 tanesini yere düşürür (eksik altın üretilmez; kale sahibi kendi kalesinde altın düşürmez). Hazırlanma göstergesi karakterin üstündedir, hazır olunca kaybolur.
+- Fırlatılan sopa can götürmez; bayıltır ve eldeki eşyayı düşürür. Hazırlanma göstergesi karakterin üstündedir, hazır olunca kaybolur.
 - Bayılıp ya da canı bitip kalesinde doğan oyuncu her zaman elinde sopayla doğar.
 - Botlar güçlü rakibi ve kazanma sayacı başlayan takımı hedefler; katları arar, ağaçtan altın çıkarır, eşya satın alır, kaçan taşıyıcıya fırlatılan sopa atar ve tehditlerden zıplayarak kaçınır. Baygın rakibe sopa fırlatmazlar.
 
@@ -85,4 +85,4 @@ Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesle
 
 - Sopa fırlatma menzili 24 birimdir. Botlar gelen sopaya 350–550 ms sonra, her sopa için tek seferde %35 olasılıkla zıplamayı dener.
 
-- Başarılı sersemletmede en çok 5 altın düşer; yalnız mevcut bakiyeden düşülür, eksik tutar üretilmez. Yeni altının tek kaynağı altın ağacıdır. Kendi kalesindeki sahibin koruması ve kale altınlarının yalnız kale takımınca toplanması devam eder.
+- **Her bayılışta** (fırlatılan sopa ya da can bitmesi, kendi kalesinde de) en çok 5 altın yere düşer; yalnız mevcut bakiyeden düşülür, eksik tutar üretilmez. Yeni altının tek kaynağı altın ağacıdır. Kale içinde düşen altını yalnız o kalenin takımı toplar.

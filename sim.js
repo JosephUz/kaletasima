@@ -72,16 +72,19 @@ function hitMelee(w,p,v){
  if(v.stun>0){const extend=Math.max(0,Math.min(RULES.stunExtend,RULES.maxStun-v.stunTotal));v.stun+=extend;v.immune+=extend;v.stunTotal+=extend;emit(w,'hit',{player:p.id,victim:v.id,extend,x:v.x,z:v.z});return;}
  const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*3;v.pz+=(v.z-p.z)/d*3;
  v.hp=Math.max(0,(v.hp??RULES.hp)-1);emit(w,'hit',{player:p.id,victim:v.id,hp:v.hp,x:v.x,z:v.z});
- if(v.hp===0){p.stats.knockouts++;faint(w,v);emit(w,'knockout',{player:p.id,victim:v.id,x:v.x,z:v.z});}
+ if(v.hp===0){p.stats.knockouts++;const gold=faint(w,v);emit(w,'knockout',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});}
 }
-// Bayılma: süre bitince kalesinde sopayla doğar (bkz. step → respawn). Eşya vurulduğu yerde kalır.
-function faint(w,v){v.climb=null;v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);}
+// Bayılma (fırlatılan sopa ya da can bitmesi): süre bitince kalesinde sopayla doğar (bkz. step → respawn). Eşya vurulduğu
+// yerde kalır. Her bayılışta bakiyeden en çok 5 altın yere düşer (eksik üretilmez); kale içinde düşeni yalnız o kalenin takımı toplar.
+function faint(w,v){v.climb=null;v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);
+ const base=castleAt(w,v),gold=Math.min(RULES.stunGold,v.gold);v.gold-=gold;
+ for(let i=0;i<gold;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
+ return gold;
+}
 function stunPlayer(w,p,v){
  if(allied(w,p.id,v.id))return false;if(v.y>0||v.vy>0){v.stats.dodges++;return false;}if(v.inv>0||v.immune>0||v.stun>0)return false;
- faint(w,v);
+ const gold=faint(w,v);
  const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*2;v.pz+=(v.z-p.z)/d*2;
- const base=castleAt(w,v),gold=inside(v,w.bases[v.id])?0:Math.min(RULES.stunGold,v.gold);v.gold-=gold;
- for(let i=0;i<gold;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
  p.stats.stuns++;emit(w,'stun',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});return true;
 }
 export function harvestTree(w,p){

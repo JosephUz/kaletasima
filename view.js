@@ -125,7 +125,7 @@ export class GameView{
   if(e.type==='treehit'){this.burst(0,3,0,'#ffe086',7);}
   if(e.type==='hit'){this.burst(e.x,1.1,e.z,'#ffdc8c',9);this.floating(e.extend?'+'+e.extend+' SN':e.extend===0?'EN ÇOK 30 SN':e.hp!=null?'-1 CAN':'PAT!',e.x,e.z);if(e.victim===0||e.player===0)this.shake=.16;}
   if(e.type==='stairs'){const p=this.world.players[e.player];this.floating((e.to>e.from?'↑ ':'↓ ')+(e.to+1)+'. KAT',p.x,p.z);}
-  if(e.type==='knockout'){this.burst(e.x,1.4,e.z,'#ff7d6e',18);this.floating('NAKAVT!',e.x,e.z);if(e.victim===0)this.shake=.3;}
+  if(e.type==='knockout'){this.burst(e.x,1.4,e.z,'#ff7d6e',18);this.floating(e.gold?'NAKAVT! -'+e.gold+' ALTIN':'NAKAVT!',e.x,e.z);if(e.victim===0)this.shake=.3;}
   if(e.type==='stun'){this.burst(e.x,1.7,e.z,'#ffdd7e',15);this.floating(e.gold?'SERSEM! -'+e.gold+' ALTIN':'SERSEM!',e.x,e.z);if(e.victim===0)this.shake=.25;}
   if(e.type==='deposit'||e.type==='buy'){this.burst(e.x,1,e.z,'#ffdc87',18);this.floating('+1 EŞYA',e.x,e.z);}
   if(e.type==='respawn'){this.burst(e.x,1,e.z,COLORS[e.player],20);}
