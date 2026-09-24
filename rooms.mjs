@@ -27,6 +27,10 @@ export function createRooms(){
  const error=(c,message)=>send(c,{type:'error',message});
  const lobby=r=>({type:'lobby',code:r.code,mode:r.mode,state:r.state,host:clients.get(r.host)?.id,seats:r.seats.map((token,i)=>{const c=clients.get(token);return{slot:i,team:i%2,name:c?.name||'Bot-'+(i+1),id:c?.id||null,online:!!c?.ws};})});
  const broadcast=r=>{for(const token of r.seats)send(clients.get(token),lobby(r));};
+ // Çevrim içi sayısı: siteyi açan her sekme boşta bir bağlantı tutar (bkz. main.js). Değişince herkese, en çok 2 sn'de bir yayılır.
+ const onlineCount=()=>{let n=0;for(const c of clients.values())if(c.ws)n++;return n;};
+ let onlineSent=-1,onlineTimer=null;
+ function onlineChanged(){if(onlineTimer)return;onlineTimer=setTimeout(()=>{onlineTimer=null;const n=onlineCount();if(n===onlineSent)return;onlineSent=n;for(const c of clients.values())send(c,{type:'online',n});},2000);onlineTimer.unref?.();}
  function startClient(r,c){send(c,{type:'start',world:snapshotFor(r.world,c.slot)});}
  function leave(c){const r=rooms.get(c.room);if(!r)return;c.room=null;const i=r.seats.indexOf(c.token);if(i>=0){r.seats[i]=null;if(r.world){r.world.players[i].bot=true;r.world.players[i].name='Bot-'+(i+1);delete r.inputs[i];}}
   if(r.host===c.token)r.host=r.seats.find(t=>clients.get(t)?.ws)||r.seats.find(Boolean)||null;
@@ -46,7 +50,7 @@ export function createRooms(){
    if(r.world.winner!==null){r.state='ended';broadcast(r);}
   }
  },1000/30);timer.unref();
- return {stats:()=>({rooms:rooms.size,online:[...clients.values()].filter(c=>c.ws).length}),close:()=>clearInterval(timer),attach(ws){
+ return {stats:()=>({rooms:rooms.size,online:onlineCount()}),close:()=>{clearInterval(timer);clearTimeout(onlineTimer);},attach(ws){
   let c=null,packets=0,windowStart=Date.now();
   ws.on('message',data=>{
    if(Date.now()-windowStart>1000){windowStart=Date.now();packets=0;}if(++packets>100)return;
@@ -54,11 +58,12 @@ export function createRooms(){
    if(m.type==='hello'){
     if(c)return;const old=typeof m.token==='string'?clients.get(m.token):null;
     if(old&&!old.ws){c=old;c.ws=ws;c.disconnected=0;}else{c={id:randomUUID(),token:randomUUID(),name:String(m.name||'Kale Taşımacılık').slice(0,16),ws,room:null,slot:0};clients.set(c.token,c);}
-    send(c,{type:'welcome',id:c.id,token:c.token});const r=rooms.get(c.room);if(r){if(r.world){r.world.players[c.slot].bot=false;startClient(r,c);}broadcast(r);}return;
+    send(c,{type:'welcome',id:c.id,token:c.token});send(c,{type:'online',n:onlineCount()});onlineChanged();const r=rooms.get(c.room);if(r){if(r.world){r.world.players[c.slot].bot=false;startClient(r,c);}broadcast(r);}return;
    }
    if(!c)return;
    if(m.type==='ping'){send(c,{type:'pong',at:m.at});return;}
    if(m.type==='leave'){leave(c);send(c,{type:'left'});return;}
+   if((m.type==='create'||m.type==='join')&&typeof m.name==='string'&&m.name.trim())c.name=m.name.trim().slice(0,16);
    if(m.type==='create'){
     if(rooms.size>=32)return error(c,'Oda sınırına ulaşıldı.');leave(c);const code=randomBytes(3).toString('hex').toUpperCase();const r={code,mode:m.mode==='coop'?'coop':'pvp',host:c.token,seats:Array(10).fill(null),state:'lobby',world:null,inputs:{},tick:0};rooms.set(code,r);occupy(r,c,0);broadcast(r);return;
    }
@@ -74,7 +79,7 @@ export function createRooms(){
     const next=sanitizeInput(m.input),old=r.inputs[c.slot]?.input;for(const k of ACTIONS)next[k]=next[k]||old?.[k]||false;if(next.floor===undefined&&old?.floor!==undefined)next.floor=old.floor;r.inputs[c.slot]={input:next,at:Date.now()};
    }
   });
-  ws.on('close',()=>{if(!c||c.ws!==ws)return;c.ws=null;c.disconnected=Date.now();const r=rooms.get(c.room);if(r){if(r.world){r.world.players[c.slot].bot=true;delete r.inputs[c.slot];}if(r.host===c.token)r.host=r.seats.find(t=>clients.get(t)?.ws)||c.token;broadcast(r);}});
+  ws.on('close',()=>{if(!c||c.ws!==ws)return;c.ws=null;c.disconnected=Date.now();onlineChanged();const r=rooms.get(c.room);if(r){if(r.world){r.world.players[c.slot].bot=true;delete r.inputs[c.slot];}if(r.host===c.token)r.host=r.seats.find(t=>clients.get(t)?.ws)||c.token;broadcast(r);}});
   ws.on('error',()=>{});
  }};
 }

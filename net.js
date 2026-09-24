@@ -12,11 +12,13 @@ export class Network{
     else if(m.type==='snapshot'){this.hooks.snapshot(m.world);}
     else if(m.type==='error')this.hooks.error(m.message);
     else if(m.type==='pong')this.rtt=Math.round(performance.now()-m.at);
+    else if(m.type==='online')this.hooks.online?.(m.n);
    };
    ws.onerror=()=>{};
    ws.onclose=()=>{clearTimeout(timeout);this.online=false;this.connecting=null;reject(new Error('Bağlantı kapandı.'));if(this.active){this.hooks.status?.('Bağlantı koptu · yeniden bağlanıyor…');this.retry=setTimeout(()=>this.connect(this.name).catch(()=>{}),1500);}};
   });return this.connecting;
  }
  send(type,body={}){if(this.ws?.readyState===1)this.ws.send(JSON.stringify({type,...body}));}
- leave(){this.send('leave');this.room=null;this.active=false;clearTimeout(this.retry);this.ws?.close();this.ws=null;this.connecting=null;}
+ // Odadan çıkar ama bağlantı açık kalır: giriş ekranındaki "çevrim içi" sayısı bu boşta bağlantılardan gelir.
+ leave(){this.send('leave');this.room=null;}
 }
