@@ -74,7 +74,7 @@ Son iki test çalışan sunucu ister. Tarayıcı testi Chrome ve Playwright kull
 Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesler prosedürel üretilir.
 
 - Sıralama eşya sayısı ve eldeki altını gösterir. Görülen 30+ altınlı rakipler botların yağma hedefidir.
-- Sersemleme 4 saniyedir; süre bitince oyuncu kendi kalesinin zemin katında ayılır, taşıdığı eşya vurulduğu yerde kalır. Ardından 2,5 saniye yeniden sersemleme koruması vardır. Sersemken sopa kullanılabilir ve başlamış savuruş iptal olmaz. Botlar sopadan kusursuz zıplamaz; dövüş kararları 220–400 ms aralıklıdır.
+- Sersemleme 10 saniyedir; süre bitince oyuncu kendi kalesinin zemin katında ayılır, taşıdığı eşya vurulduğu yerde kalır. Ardından 2,5 saniye yeniden sersemleme koruması vardır. Sersemken sopa kullanılabilir ve başlamış savuruş iptal olmaz. Botlar sopadan kusursuz zıplamaz; dövüş kararları 220–400 ms aralıklıdır.
 - Her kale iki eşya ile başlar; takımlı maçta başlangıç toplamı takım başına 10 eşyadır.
 
 - Kalene rakip girdiğinde ekran kenarları kırmızı yanıp söner. Son rakip çıkınca uyarı kapanır; dost oyuncular alarmı tetiklemez. Çevrim içi maçta uzakta olsan da kendi kalenin alarmını alırsın.
@@ -84,3 +84,7 @@ Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesle
 - Sağ tık / Q eldeki tek sopayı fırlatır. Sopa isabette, duvarda veya menzil sonunda kaybolur; geri dönmez ve süreyle yenilenmez. Silahsızken kendi kale kapısının dışındaki kasaya yaklaş ve E ile ücretsiz yeni sopa al. Botlar da kasaya dönmek zorundadır. Kalede ayılmak sopa vermez.
 
 - Sis ve uzaklık temelli görünürlük sınırı kaldırıldı. Tüm kaleler ve açık alandaki oyuncular/eşyalar uzaklık sınırı olmadan görünür. Kale odası ve kat gizliliği korunur.
+
+- Sopa fırlatma menzili 24 birimdir. Botlar gelen sopaya 350–550 ms sonra, her sopa için tek seferde %35 olasılıkla zıplamayı dener.
+
+- Başarılı sersemletmede 5 altın düşer; mevcut bakiyeden düşülür, eksik tutar üretilir ve bakiye eksiye inmez. Kendi kalesindeki sahibin koruması ve kale altınlarının yalnız kale takımınca toplanması devam eder.

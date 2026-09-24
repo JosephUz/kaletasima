@@ -1,5 +1,5 @@
 import {worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,toggleDoor,route} from './castle.js';
-export const RULES = Object.freeze({radius:59,baseRadius:8,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:4,trapTime:25,target:10,teamTarget:20,winHold:60,price:15,hitGold:3,meleeReach:2.7,throwRange:12,throwSpeed:22});
+export const RULES = Object.freeze({radius:59,baseRadius:8,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,trapTime:25,target:10,teamTarget:20,winHold:60,price:15,hitGold:3,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
 export const targetScore=w=>w.mode==='solo'?RULES.target:RULES.teamTarget;
 export const COLORS=['#56b9c6','#e98b68','#b29be3','#e5bd5c','#86ba73','#62c9be','#ec9e74','#7eaad7','#ce82a0','#b6bf6e'];
 export const NAMES=Array.from({length:10},(_,i)=>'Bot-'+(i+1));
@@ -74,7 +74,9 @@ function stunPlayer(w,p,v){
  if(allied(w,p.id,v.id))return false;if(v.y>0||v.vy>0){v.stats.dodges++;return false;}if(v.inv>0||v.immune>0||v.stun>0)return false;
  v.stun=RULES.stun;v.immune=RULES.stun+2.5;
  const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*2;v.pz+=(v.z-p.z)/d*2;
- dropHeld(w,v);p.stats.stuns++;emit(w,'stun',{player:p.id,victim:v.id,x:v.x,z:v.z});return true;
+ const base=castleAt(w,v),gold=inside(v,w.bases[v.id])?0:RULES.stunGold;v.gold=Math.max(0,v.gold-gold);
+ for(let i=0;i<gold;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
+ dropHeld(w,v);p.stats.stuns++;emit(w,'stun',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});return true;
 }
 export function harvestTree(w,p){
  const d=Math.hypot(p.x,p.z);if(!p.hasClub||p.floor!==0||d>3.4||p.stun>0||w.time<w.treeReady||w.coins.length>=80)return false;
@@ -159,8 +161,12 @@ function updateBot(w,p,dt){
  p.sprint=true;
  const threats=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&dist(p,v)<11).sort((a,b)=>(b.held!==null)-(a.held!==null)||(countItems(w,b.id)*5+b.gold/3)-(countItems(w,a.id)*5+a.gold/3));
  const victim=threats[0];if(react&&victim&&dist(p,victim)>2.5&&p.hasClub&&(victim.held!==null||victim.gold>=30||inside(victim,own)))throwClub(w,p.id,{x:victim.x+victim.vx*.18,z:victim.z+victim.vz*.18});
- const incoming=w.shots.some(s=>!allied(w,p.id,s.owner)&&s.floor===(p.floor||0)&&dist(p,s)<3.6);
- if(react&&incoming&&w.random()<.55&&(p.y===0||p.vy<0))jump(w,p.id);
+ const incoming=w.shots.find(s=>!allied(w,p.id,s.owner)&&s.floor===(p.floor||0)&&dist(p,s)<12&&visibleTo(w,p,s)&&(p.x-s.x)*s.dx+(p.z-s.z)*s.dz>0&&Math.abs((p.x-s.x)*s.dz-(p.z-s.z)*s.dx)<1.6);
+ if(incoming){
+  if(p.dodgeShot!==incoming.id){p.dodgeShot=incoming.id;p.dodgeAt=w.time+.35+w.random()*.2;}
+  if(w.time>=p.dodgeAt){p.dodgeAt=Infinity;if(p.y===0&&w.random()<.35)jump(w,p.id);}
+ }else{p.dodgeShot=null;p.dodgeAt=Infinity;}
+
 
 }
 export function applyInput(w,p,input,dt){
