@@ -1,5 +1,5 @@
-import {worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,toggleDoor,route} from './castle.js';
-export const RULES = Object.freeze({radius:59,baseRadius:8,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,trapTime:25,target:10,teamTarget:20,winHold:60,price:15,hitGold:3,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
+import {worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,route} from './castle.js';
+export const RULES = Object.freeze({radius:59,baseRadius:8,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,maxStun:30,stunExtend:1,hp:3,target:10,teamTarget:20,winHold:60,price:15,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
 export const targetScore=w=>w.mode==='solo'?RULES.target:RULES.teamTarget;
 export const COLORS=['#56b9c6','#e98b68','#b29be3','#e5bd5c','#86ba73','#62c9be','#ec9e74','#7eaad7','#ce82a0','#b6bf6e'];
 export const NAMES=Array.from({length:10},(_,i)=>'Bot-'+(i+1));
@@ -13,8 +13,8 @@ export function createWorld(seed=71,options={}){
  const w={mode,radius:count===5?74:100,ring:count===5?54:80,me:0,time:0,seed,players:[],bases:[],items:[],coins:[],shots:[],events:[],winner:null,nextId:1,treeReady:0,claimant:null,claimTime:0};
  w.random=()=>{w.seed=(w.seed*1664525+1013904223)>>>0;return w.seed/4294967296;};
  for(let i=0;i<count;i++){const a=i*TAU/count,x=Math.sin(a)*w.ring,z=Math.cos(a)*w.ring;
-  w.bases.push({id:i,x,z,angle:a,r:RULES.baseRadius,locked:true,wasLocked:true,manualOpen:false});
-  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,airJumps:0,stun:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,trap:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:i!==0,botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,stuns:0,steals:0,deposits:0,purchases:0,traps:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
+  w.bases.push({id:i,x,z,angle:a,r:RULES.baseRadius});
+  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,hp:RULES.hp,airJumps:0,stun:0,stunTotal:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:i!==0,botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,knockouts:0,stuns:0,steals:0,deposits:0,purchases:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
   addItem(w,i,i%5);addItem(w,i,(i+2)%5);
  }
  for(let i=0;i<5;i++){const a=i*TAU/5;addItem(w,null,i,Math.sin(a)*4.1,Math.cos(a)*4.1);}
@@ -39,7 +39,7 @@ export function interact(w,id){
   return true;
  }
  let best=null,d=1.8;
- for(const i of w.items){if(i.holder!==null||!visibleTo(w,p,i))continue;if(i.base!==null&&i.base!==id&&(allied(w,id,i.base)||w.bases[i.base].locked))continue;const n=dist(p,i);if(n<d){best=i;d=n;}}
+ for(const i of w.items){if(i.holder!==null||!visibleTo(w,p,i))continue;if(i.base!==null&&i.base!==id&&allied(w,id,i.base))continue;const n=dist(p,i);if(n<d){best=i;d=n;}}
  if(!best)return false;
  if(best.base!==null&&best.base!==id){p.stats.steals++;emit(w,'steal',{player:id,victim:best.base,item:best.id});}
  best.base=null;best.holder=id;p.held=best.id;emit(w,'pickup',{player:id,item:best.id});return true;
@@ -64,19 +64,22 @@ export function jump(w,id){
 }
 function hitMelee(w,p,v){
  if(allied(w,p.id,v.id))return;if(v.y>0||v.vy>0){v.stats.dodges++;return;}if(v.inv>0||v.hurt>0)return;
- v.hurt=.45;const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*3;v.pz+=(v.z-p.z)/d*3;
- const base=castleAt(w,v),protectedOwner=inside(v,w.bases[v.id]);
- const n=protectedOwner?0:base?RULES.hitGold:Math.min(RULES.hitGold,v.gold);v.gold=Math.max(0,v.gold-n);
- for(let i=0;i<n;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
- p.stats.hits++;emit(w,'hit',{player:p.id,victim:v.id,gold:n,x:v.x,z:v.z});
+ // Sopa altın düşürmez. Ayaktaysa 1 can gider; baygınsa bayılma 1 sn uzar (toplam en çok RULES.maxStun).
+ v.hurt=.45;p.stats.hits++;
+ if(v.stun>0){const extend=Math.max(0,Math.min(RULES.stunExtend,RULES.maxStun-v.stunTotal));v.stun+=extend;v.immune+=extend;v.stunTotal+=extend;emit(w,'hit',{player:p.id,victim:v.id,extend,x:v.x,z:v.z});return;}
+ const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*3;v.pz+=(v.z-p.z)/d*3;
+ v.hp=Math.max(0,(v.hp??RULES.hp)-1);emit(w,'hit',{player:p.id,victim:v.id,hp:v.hp,x:v.x,z:v.z});
+ if(v.hp===0){p.stats.knockouts++;faint(w,v);emit(w,'knockout',{player:p.id,victim:v.id,x:v.x,z:v.z});}
 }
+// Bayılma: süre bitince kalesinde sopayla doğar (bkz. step → respawn). Eşya vurulduğu yerde kalır.
+function faint(w,v){v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);}
 function stunPlayer(w,p,v){
  if(allied(w,p.id,v.id))return false;if(v.y>0||v.vy>0){v.stats.dodges++;return false;}if(v.inv>0||v.immune>0||v.stun>0)return false;
- v.stun=RULES.stun;v.immune=RULES.stun+2.5;
+ faint(w,v);
  const d=Math.max(.01,dist(p,v));v.px+=(v.x-p.x)/d*2;v.pz+=(v.z-p.z)/d*2;
- const base=castleAt(w,v),gold=inside(v,w.bases[v.id])?0:RULES.stunGold;v.gold=Math.max(0,v.gold-gold);
+ const base=castleAt(w,v),gold=inside(v,w.bases[v.id])?0:Math.min(RULES.stunGold,v.gold);v.gold-=gold;
  for(let i=0;i<gold;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
- dropHeld(w,v);p.stats.stuns++;emit(w,'stun',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});return true;
+ p.stats.stuns++;emit(w,'stun',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});return true;
 }
 export function harvestTree(w,p){
  const d=Math.hypot(p.x,p.z);if(!p.hasClub||p.floor!==0||d>3.4||p.stun>0||w.time<w.treeReady||w.coins.length>=80)return false;
@@ -84,20 +87,9 @@ export function harvestTree(w,p){
  w.treeReady=w.time+.22;p.stats.treeHits++;for(let n=0;n<2;n++){const a=w.random()*Math.PI*2;addCoin(w,Math.sin(a)*1.9,Math.cos(a)*1.9);}
  emit(w,'treehit',{player:p.id,x:0,z:0});return true;
 }
-export function updateGates(w){
- for(const b of w.bases){const p=w.players[b.id];b.wasLocked=b.locked;b.locked=inside(p,b,-.15)&&p.stun<=0&&!b.manualOpen&&!(w.claimant!==null&&allied(w,b.id,w.claimant));
-  if(b.locked&&!b.wasLocked)emit(w,'lock',{player:b.id,x:b.x,z:b.z});
-  if(!b.locked&&b.wasLocked)emit(w,'unlock',{player:b.id,x:b.x,z:b.z});
-  for(const v of w.players){
-   if(allied(w,v.id,b.id))continue;
-   if(b.locked&&inside(v,b,-.1)&&v.trap===null){v.trap={base:b.id,until:w.time+RULES.trapTime};p.stats.traps++;emit(w,'trap',{player:b.id,victim:v.id});}
-   if(v.trap?.base===b.id&&!inside(v,b,.2))v.trap=null;
-  }
- }
-}
 export function respawn(w,p){
- const trapped=p.trap;dropHeld(w,p);const b=w.bases[p.id];p.x=b.x;p.z=b.z;p.floor=0;p.airJumps=0;p.y=p.vy=p.vx=p.vz=p.px=p.pz=0;p.stun=0;p.immune=Math.max(p.immune,2.5);p.inv=1;p.attack=0;p.attackDone=true;p.moveX=p.moveZ=0;p.trap=null;p.goal=null;p.botThink=.4;
- emit(w,'respawn',{player:p.id,base:trapped?.base,x:p.x,z:p.z});
+ dropHeld(w,p);const b=w.bases[p.id];p.x=b.x;p.z=b.z;p.floor=0;p.airJumps=0;p.y=p.vy=p.vx=p.vz=p.px=p.pz=0;p.stun=p.stunTotal=0;p.hp=RULES.hp;p.hasClub=true;p.immune=Math.max(p.immune,2.5);p.inv=1;p.attack=0;p.attackDone=true;p.moveX=p.moveZ=0;p.goal=null;p.botThink=.4;
+ emit(w,'respawn',{player:p.id,x:p.x,z:p.z});
 }
 function segmentDistance(p,a,b){const dx=b.x-a.x,dz=b.z-a.z,l=dx*dx+dz*dz,t=l?clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/l,0,1):0;return Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t);}
 function updateShots(w,dt){for(let n=w.shots.length-1;n>=0;n--){const s=w.shots[n],p=w.players[s.owner],old={x:s.x,z:s.z};s.age+=dt;
@@ -108,7 +100,6 @@ function updateShots(w,dt){for(let n=w.shots.length-1;n>=0;n--){const s=w.shots[
 }}
 function chooseGoal(w,p){
  const own=w.bases[p.id];
- if(p.trap){return{type:'escape',base:p.trap.base};}
  if(!p.hasClub)return{type:'rearm'};
  const intruders=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&inside(v,own,-.2)).sort((a,b)=>dist(p,a)-dist(p,b));
  if(intruders.length&&dist(p,own)<18)return{type:'defend',id:intruders[0].id};
@@ -117,7 +108,7 @@ function chooseGoal(w,p){
  if(p.gold>=RULES.price)return{type:'buy'};
  let best=null,score=-Infinity;
  for(const i of w.items){if(i.holder!==null||(i.base!==null&&allied(w,i.base,p.id))||!visibleTo(w,p,i))continue;
- const b=i.base===null?null:w.bases[i.base],d=dist(p,i),s=(b?(b.locked?2:10):8)-d*.35+(b?countItems(w,b.id)*.8:0)+w.random()*2;
+ const b=i.base===null?null:w.bases[i.base],d=dist(p,i),s=(b?10:8)-d*.35+(b?countItems(w,b.id)*.8:0)+w.random()*2;
  if(s>score){score=s;best={type:'raid',id:i.id};}}
  const coin=w.coins.filter(c=>(c.castleOwner==null||allied(w,p.id,c.castleOwner))&&dist(p,c)<9).sort((a,b)=>dist(p,a)-dist(p,b))[0];
  if(coin&&p.gold<RULES.price&&(dist(p,coin)<3.5||score<4))return{type:'coin',id:coin.id};
@@ -138,20 +129,16 @@ function updateBot(w,p,dt){
  if(g.type==='home'||g.type==='buy'){target=roomPoint(own,p.id%4,p.id%3);if(dist(p,target)<.8&&(p.floor||0)===target.floor){if(p.held!==null)interact(w,p.id);if(p.gold>=RULES.price)buy(w,p.id);p.goal=null;}}
  if(g.type==='rearm'){target=clubCrate(own);if(nearClubCrate(w,p)){interact(w,p.id);p.goal=null;}}
  if(g.type==='tree'){const a=p.id*Math.PI*2/w.players.length;target={x:Math.sin(a)*2.65,z:Math.cos(a)*2.65,floor:0};if(dist(p,{x:0,z:0})<3.3)melee(w,p.id,{x:0,z:0});}
- if(g.type==='search'){const b=w.bases[g.base];target=roomPoint(b,g.room,g.floor);if(dist(p,b)<15&&b.locked){p.goal={type:'tree'};p.strategyUntil=w.time+10;p.botThink=0;}else if(dist(p,target)<.7&&(p.floor||0)===g.floor){g.room++;if(g.room>=4){g.room=0;g.floor=(g.floor+1)%3;}p.botThink=0;}}
+ if(g.type==='search'){const b=w.bases[g.base];target=roomPoint(b,g.room,g.floor);if(dist(p,target)<.7&&(p.floor||0)===g.floor){g.room++;if(g.room>=4){g.room=0;g.floor=(g.floor+1)%3;}p.botThink=0;}}
  if(g.type==='rob'){target=w.players[g.id];if(target.gold<15||!visibleTo(w,p,target)||inside(target,w.bases[target.id])){p.goal=null;target=null;}}
  if(g.type==='defend'){target=w.players[g.id];if(!inside(target,own))p.goal=null;}
  if(g.type==='raid'){
   const item=w.items.find(i=>i.id===g.id);
   if(!item||item.holder!==null||item.base===p.id){p.goal=null;p.moveX=p.moveZ=0;return;}
-  const base=item.base===null?null:w.bases[item.base];
-  if(base?.locked){const owner=w.players[base.id];const dx=p.x-base.x,dz=p.z-base.z,d=Math.max(.01,dist(p,base));target={x:base.x+dx/d*(base.r+1.05),z:base.z+dz/d*(base.r+1.05)};
-   if(visibleTo(w,p,owner)&&dist(p,owner)<RULES.throwRange-.6){p.aimX=owner.x;p.aimZ=owner.z;p.angle=Math.atan2(owner.x-p.x,owner.z-p.z);throwClub(w,p.id,owner);}
-  }else{target=item;if(dist(p,item)<1.65&&visibleTo(w,p,item)){interact(w,p.id);p.goal=null;}}
+  target=item;if(dist(p,item)<1.65&&visibleTo(w,p,item)){interact(w,p.id);p.goal=null;}
  }
  if(g.type==='coin'){target=w.coins.find(c=>c.id===g.id);if(!target)p.goal=null;}
  if(g.type==='wander')target=g;
- if(g.type==='escape'){const b=w.bases[g.base],owner=w.players[b.id];if(b.locked){p.aimX=owner.x;p.aimZ=owner.z;throwClub(w,p.id,owner);const dx=p.x-owner.x,dz=p.z-owner.z,d=Math.max(.1,Math.hypot(dx,dz));target={x:b.x+dx/d*2.7,z:b.z+dz/d*2.7};}else target=own;}
  if(target){steer(w,p,target);if(p.attack<=0){p.angle+=angleDelta(p.angle,Math.atan2(target.x-p.x,target.z-p.z))*Math.min(1,dt*13);}}
  else p.moveX=p.moveZ=0;
  // Bots fight one another as readily as they fight the human.
@@ -160,7 +147,8 @@ function updateBot(w,p,dt){
  if(react&&enemy&&p.attackCd<=0){melee(w,p.id,enemy);}
  p.sprint=true;
  const threats=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&dist(p,v)<11).sort((a,b)=>(b.held!==null)-(a.held!==null)||(countItems(w,b.id)*5+b.gold/3)-(countItems(w,a.id)*5+a.gold/3));
- const victim=threats[0];if(react&&victim&&dist(p,victim)>2.5&&p.hasClub&&(victim.held!==null||victim.gold>=30||inside(victim,own)))throwClub(w,p.id,{x:victim.x+victim.vx*.18,z:victim.z+victim.vz*.18});
+ // Baygına fırlatmak boşa gider (zaten sersem, ek altın düşmez): yalnız ayaktakiler hedeflenir.
+ const victim=threats.find(v=>v.stun<=0);if(react&&victim&&dist(p,victim)>2.5&&p.hasClub&&(victim.held!==null||victim.gold>=30||inside(victim,own)))throwClub(w,p.id,{x:victim.x+victim.vx*.18,z:victim.z+victim.vz*.18});
  const incoming=w.shots.find(s=>!allied(w,p.id,s.owner)&&s.floor===(p.floor||0)&&dist(p,s)<12&&visibleTo(w,p,s)&&(p.x-s.x)*s.dx+(p.z-s.z)*s.dz>0&&Math.abs((p.x-s.x)*s.dz-(p.z-s.z)*s.dx)<1.6);
  if(incoming){
   if(p.dodgeShot!==incoming.id){p.dodgeShot=incoming.id;p.dodgeAt=w.time+.35+w.random()*.2;}
@@ -175,7 +163,7 @@ export function applyInput(w,p,input,dt){
  else if(Math.hypot(p.moveX,p.moveZ)>.1&&p.attack<=0)p.angle+=angleDelta(p.angle,Math.atan2(p.moveX,p.moveZ))*(1-Math.exp(-16*dt));
  if(input.jump)jump(w,p.id);
  if(Number.isInteger(input.floor))useStairs(w,p,input.floor-(p.floor||0));
- if(input.up)useStairs(w,p,1);if(input.down)useStairs(w,p,-1);if(input.door)toggleDoor(w,p);
+ if(input.up)useStairs(w,p,1);if(input.down)useStairs(w,p,-1);
  if(input.hit)melee(w,p.id,input.aim);if(input.throw)throwClub(w,p.id,input.aim);if(input.grab)interact(w,p.id);if(input.buy)buy(w,p.id);
 }
 export function step(w,dt,input={},inputs=null){
@@ -185,9 +173,8 @@ export function step(w,dt,input={},inputs=null){
  for(const p of w.players){
   const wasStunned=p.stun>0;
   for(const k of ['stun','immune','hurt','inv','attackCd'])p[k]=Math.max(0,p[k]-dt);
-  if((wasStunned&&p.stun===0)||(p.stun===0&&p.trap&&w.time>=p.trap.until))respawn(w,p);
+  if(wasStunned&&p.stun===0)respawn(w,p);
  }
- updateGates(w);
  for(const p of w.players){
   if(p.bot)updateBot(w,p,dt);
   const norm=Math.hypot(p.moveX,p.moveZ),speed=(p.held===null?RULES.speed:RULES.carrySpeed)*(p.sprint?RULES.sprint:1)*(p.stun>0?0:p.attack>0?.7:1);
@@ -200,7 +187,7 @@ export function step(w,dt,input={},inputs=null){
   if(p.attack>0){p.attack=Math.max(0,p.attack-dt);if(p.attack<.28&&p.attack>.04){if(!p.attackDone){p.attackDone=true;harvestTree(w,p);}const fx=Math.sin(p.angle),fz=Math.cos(p.angle);p.attackHits??=[];for(const v of w.players){const d=dist(p,v);if(!p.attackHits.includes(v.id)&&!allied(w,p.id,v.id)&&d<RULES.meleeReach&&clearSight(w,p,v)&&((v.x-p.x)*fx+(v.z-p.z)*fz)/Math.max(.01,d)>-.1&&Math.abs(p.y-v.y)<1.4){const hits=p.stats.hits;hitMelee(w,p,v);if(p.stats.hits>hits)p.attackHits.push(v.id);}}}}
   if(p.held!==null){const i=w.items.find(i=>i.id===p.held);i.x=p.x;i.z=p.z;i.floor=p.floor||0;}
  }
- updateShots(w,dt);updateGates(w);
+ updateShots(w,dt);
  for(let i=w.coins.length-1;i>=0;i--){const c=w.coins[i];c.age+=dt;if(c.age<.8){c.x+=c.vx*dt;c.z+=c.vz*dt;c.vx*=Math.exp(-5*dt);c.vz*=Math.exp(-5*dt);}
   for(const p of w.players)if((c.castleOwner==null||allied(w,p.id,c.castleOwner))&&p.stun<=0&&(p.floor||0)===(c.floor||0)&&dist(c,p)<1.05&&clearSight(w,p,c)&&c.age>.3&&!(c.excluded===p.id&&c.age<1.1)){p.gold+=c.value;p.stats.goldCollected+=c.value;w.coins.splice(i,1);emit(w,'coin',{player:p.id,x:c.x,z:c.z});break;}
  }

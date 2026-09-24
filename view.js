@@ -76,12 +76,10 @@ export class GameView{
    for(const z of [-8.24,8.24])for(const x of [-4.3,4.3])track(this.box(.48,1.35,.08,'#344b49',x,2,z,group));
    levels.push({group,parts});
   }
-  const door=new T.Group();door.position.set(-1.45,0,-8);p.add(door);
-  this.box(2.9,2.9,.28,'#71543b',1.45,1.5,0,door);for(const yy of [.55,2.35])this.box(2.95,.17,.33,'#434f4a',1.45,yy,0,door);
   this.box(3.6,.55,.75,'#c6c7ad',0,3.2,-8,p);
   const banner=this.box(1.7,2,.12,this.world.players[b.id].color,0,9.6,-8.3,p);
   const ring=this.ring(10.4,10.5,this.world.players[b.id].color,0,0,p);ring.position.y=.03;
-  this.baseViews.push({p,levels,door,banner,ring,bounds:new T.Box3(new T.Vector3(b.x-12,0,b.z-12),new T.Vector3(b.x+12,12.6,b.z+12)),label:this.label(p,13,'base','')});
+  this.baseViews.push({p,levels,banner,ring,bounds:new T.Box3(new T.Vector3(b.x-12,0,b.z-12),new T.Vector3(b.x+12,12.6,b.z+12)),label:this.label(p,13,'base','')});
  }
  club(parent){const g=new T.Group();this.box(.16,1.05,.17,'#8c5935',0,.25,0,g);const head=this.box(.32,.57,.3,'#ad7847',0,.76,0,g);head.rotation.z=.09;for(const y of [.57,.85])this.box(.35,.075,.32,'#d4b16a',0,y,0,g);parent.add(g);return g;}
  buildActor(p){
@@ -128,8 +126,9 @@ export class GameView{
  event(e){
   if(e.type==='airjump')this.burst(e.x,e.y+(e.floor||0)*CASTLE.height+.4,e.z,'#dff0ff',8);
   if(e.type==='treehit'){this.burst(0,3,0,'#ffe086',7);}
-  if(e.type==='hit'){this.burst(e.x,1.1,e.z,'#ffdc8c',9);this.floating(e.gold?'-'+e.gold+' ALTIN':'PAT!',e.x,e.z);if(e.victim===0||e.player===0)this.shake=.16;}
-  if(e.type==='stun'){this.burst(e.x,1.7,e.z,'#ffdd7e',15);this.floating('SERSEM!',e.x,e.z);if(e.victim===0)this.shake=.25;}
+  if(e.type==='hit'){this.burst(e.x,1.1,e.z,'#ffdc8c',9);this.floating(e.extend?'+'+e.extend+' SN':e.extend===0?'EN ÇOK 30 SN':e.hp!=null?'-1 CAN':'PAT!',e.x,e.z);if(e.victim===0||e.player===0)this.shake=.16;}
+  if(e.type==='knockout'){this.burst(e.x,1.4,e.z,'#ff7d6e',18);this.floating('NAKAVT!',e.x,e.z);if(e.victim===0)this.shake=.3;}
+  if(e.type==='stun'){this.burst(e.x,1.7,e.z,'#ffdd7e',15);this.floating(e.gold?'SERSEM! -'+e.gold+' ALTIN':'SERSEM!',e.x,e.z);if(e.victim===0)this.shake=.25;}
   if(e.type==='deposit'||e.type==='buy'){this.burst(e.x,1,e.z,'#ffdc87',18);this.floating('+1 EŞYA',e.x,e.z);}
   if(e.type==='respawn'){this.burst(e.x,1,e.z,COLORS[e.player],20);}
  }
@@ -138,15 +137,13 @@ export class GameView{
   const hero=w.players[w.me||0],location=roomAt(w,hero),elevation=(hero.floor||0)*CASTLE.height;this.plane.constant=-elevation;this.occlusionTarget.set(hero.x,elevation+hero.y+1.25,hero.z);const cameraDistance=this.camera.position.distanceTo(this.occlusionTarget);this.occlusionRay.set(this.camera.position,this.occlusionTarget.clone().sub(this.camera.position).normalize());
   for(const b of w.bases){const v=this.baseViews[b.id],n=countItems(w,b.id),here=location?.base===b.id;
    v.p.visible=true;const hit=this.occlusionRay.intersectBox(v.bounds,this.occlusionHit);v.occluded=v.bounds.containsPoint(this.camera.position)||(!!hit&&this.camera.position.distanceTo(hit)<cameraDistance-.25);v.label.suppressed=!v.p.visible||here||v.occluded;
-   const owner=w.players[b.id],gate=worldPoint(b,0,-8),ownerAtDoor=(owner.floor||0)===0&&Math.hypot(owner.x-gate.x,owner.z-gate.z)<3;
-   const angle=!b.locked||ownerAtDoor?-Math.PI*.55:0;v.door.rotation.y+=(angle-v.door.rotation.y)*(1-Math.exp(-8*dt));
-   v.banner.visible=!here&&!v.occluded;v.door.visible=(!here||location.floor===0)&&!v.occluded;
+   v.banner.visible=!here&&!v.occluded;
    for(let f=0;f<3;f++)for(const part of v.levels[f].parts){
     let opacity=v.occluded&&!here?.10:1;
     if(here){if(part.kind==='roof')opacity=.015;else if(f>location.floor)opacity=.025;else if(f<location.floor)opacity=.06;else if(part.kind==='wall')opacity=.18;else if(part.room>=0&&part.room!==location.room)opacity=.13;}
     part.mesh.material.opacity=opacity;part.mesh.material.depthWrite=opacity>.5;part.mesh.castShadow=opacity>.5;
    }
-   html(v.label.el,'<b style="color:'+this.world.players[b.id].color+'">'+(b.id===hero.id?'SENİN KALE':escape(w.players[b.id].name.toLocaleUpperCase('tr-TR')))+'</b> · '+n+'/'+RULES.target+'<span>'+(b.locked?'◆ KAPI KAPALI':'◇ KAPI AÇIK')+' · 3 KAT</span>');
+   html(v.label.el,'<b style="color:'+this.world.players[b.id].color+'">'+(b.id===hero.id?'SENİN KALE':escape(w.players[b.id].name.toLocaleUpperCase('tr-TR')))+'</b> · '+n+'/'+RULES.target+'<span>3 KAT</span>');
   }
   for(const p of w.players){const v=this.actorViews.get(p.id),speed=Math.hypot(p.vx,p.vz),walk=Math.min(speed/6,1),phase=this.time*13;
    v.root.visible=p.id===hero.id||visibleTo(w,hero,p);if(!v.root.visible){v.label.suppressed=true;continue;}v.label.suppressed=false;v.root.position.set(p.x,p.y+.2+(p.floor||0)*CASTLE.height,p.z);v.root.rotation.y=p.angle;v.body.rotation.z=p.stun>0?.45+Math.sin(this.time*4)*.12:p.hurt>0?Math.sin(this.time*38)*.11:0;v.body.position.y=Math.abs(Math.sin(phase))*walk*.045;
@@ -155,7 +152,7 @@ export class GameView{
    v.arms[1].rotation.x=p.attack>0?-1.2:Math.sin(phase)*walk*.35;v.arms[1].rotation.z=p.attack>0?-.4:0;v.arms[1].rotation.y=p.attack>0?(-1.8+(1-p.attack/.36)*3.4):0;
    v.weapon.visible=!!p.hasClub;v.stars.visible=p.stun>0;v.stars.rotation.y=this.time*3;
    v.aura.material.opacity=p.inv>0?.3+Math.sin(this.time*20)*.25:.8;
-   html(v.label.el,'<span style="color:'+p.color+'">'+escape(p.name)+'</span>'+(p.stun>0?'<span class="stun-text">✦ '+p.stun.toFixed(1)+' sn</span>':p.trap?'<span class="stun-text">KAPANA KISILDI · '+Math.max(0,Math.ceil(p.trap.until-w.time))+'</span>':'')+(p.id===hero.id&&!p.hasClub?'<span class="unarmed">SOPA YOK · KAPIDAKİ KASADAN AL</span>':''));
+   html(v.label.el,'<span style="color:'+p.color+'">'+escape(p.name)+'</span>'+(p.stun>0?'<span class="stun-text">✦ '+p.stun.toFixed(1)+' sn</span>':'')+(p.id===hero.id&&!p.hasClub?'<span class="unarmed">SOPA YOK · KAPIDAKİ KASADAN AL</span>':''));
   }
   const itemIds=new Set(w.items.map(i=>i.id));for(const [id,v]of this.itemViews)if(!itemIds.has(id)){this.scene.remove(v);this.itemViews.delete(id);}
   for(const i of w.items){let v=this.itemViews.get(i.id);if(!v){v=this.buildItem(i.kind);this.itemViews.set(i.id,v);}
