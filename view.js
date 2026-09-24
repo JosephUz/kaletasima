@@ -11,7 +11,7 @@ export class GameView{
   this.canvas=canvas;this.world=w;this.renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFSoftShadowMap;this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.18;
   this.scene=new T.Scene();this.scene.background=new T.Color('#718a83');
   this.materials=new Map();this.geos={box:new T.BoxGeometry(1,1,1),cyl:new T.CylinderGeometry(1,1,1,12),ball:new T.IcosahedronGeometry(1,1),cone:new T.ConeGeometry(1,1,8)};
-  this.ortho=new T.OrthographicCamera();this.third=new T.PerspectiveCamera(58,1,.1,300);this.camera=this.ortho;this.mode='iso';this.overview=false;this.zoom=17;this.yaw=Math.PI;this.pitch=.36;this.focus=new T.Vector3();this.desired=new T.Vector3();this.projected=new T.Vector3();this.ray=new T.Raycaster();this.plane=new T.Plane(new T.Vector3(0,1,0),0);this.ndc=new T.Vector2();this.hit=new T.Vector3();
+  this.third=new T.PerspectiveCamera(58,1,.1,300);this.camera=this.third;this.mode='third';this.overview=false;this.yaw=Math.PI;this.pitch=.36;this.focus=new T.Vector3();this.desired=new T.Vector3();this.projected=new T.Vector3();this.ray=new T.Raycaster();this.plane=new T.Plane(new T.Vector3(0,1,0),0);this.ndc=new T.Vector2();this.hit=new T.Vector3();
   this.actorViews=new Map();this.itemViews=new Map();this.coinViews=new Map();this.shotViews=new Map();this.baseViews=[];this.labels=[];this.effects=[];this.floaters=[];this.labelRoot=document.querySelector('#world-labels');this.time=0;this.shake=0;
   const sun=new T.DirectionalLight('#ffdfa5',3.1);sun.position.set(-20,35,18);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-68,right:68,top:68,bottom:-68,near:.1,far:320});sun.shadow.normalBias=.04;sun.shadow.bias=-.00015;this.scene.add(sun);this.scene.add(new T.HemisphereLight('#def1e7','#65734e',2.5));
   this.quality=1;this.sun=sun;this.occlusionRay=new T.Ray();this.occlusionTarget=new T.Vector3();this.occlusionHit=new T.Vector3();this.buildArena(w);for(const p of w.players)this.actorViews.set(p.id,this.buildActor(p));this.buildAim();this.resize();this.reset(w);
@@ -108,13 +108,13 @@ export class GameView{
  reset(w){this.world=w;for(const map of [this.itemViews,this.coinViews,this.shotViews]){for(const g of map.values())this.scene.remove(g);map.clear();}for(const f of this.floaters)f.el.remove();this.floaters=[];const p=w.players[w.me||0];this.focus.set(p.x,(p.floor||0)*CASTLE.height,p.z);this.shake=0;}
  aimFromScreen(x,y){this.ndc.set(x/innerWidth*2-1,1-y/innerHeight*2);this.ray.setFromCamera(this.ndc,this.camera);if(this.ray.ray.intersectPlane(this.plane,this.hit))return{x:this.hit.x,z:this.hit.z};return null;}
  project(x,y,z){this.projected.set(x,y,z).project(this.camera);return{x:(this.projected.x*.5+.5)*innerWidth,y:(-.5*this.projected.y+.5)*innerHeight,z:this.projected.z};}
- setMode(mode){this.mode=mode;this.camera=mode==='iso'?this.ortho:this.third;this.yaw=this.world.players[this.world.me||0].angle;this.resize();}
- resize(){const a=innerWidth/innerHeight;this.renderer.setSize(innerWidth,innerHeight);this.third.aspect=a;this.third.updateProjectionMatrix();const half=this.overview?Math.max(60,76/a):Math.max(this.zoom,17/a);Object.assign(this.ortho,{left:-half*a,right:half*a,top:half,bottom:-half,near:.1,far:180});this.ortho.updateProjectionMatrix();}
+ // Tek kamera: omuz üstü (izometrik görünüm yok).
+ setMode(){this.mode='third';this.camera=this.third;this.yaw=this.world.players[this.world.me||0].angle;this.resize();}
+ resize(){const a=innerWidth/innerHeight;this.renderer.setSize(innerWidth,innerHeight);this.third.aspect=a;this.third.updateProjectionMatrix();}
  updateCamera(dt,started){
   {const hero=this.world.players[this.world.me||0],y=floorY(hero);this.heroY=this.heroY==null||!hero.climb&&Math.abs(this.heroY-y)>CASTLE.height*2.5?y:this.heroY+(y-this.heroY)*(1-Math.exp(-14*dt));}
   const p=this.world.players[this.world.me||0];
-  if(this.mode==='iso'){this.desired.set(this.overview||!started?0:p.x,this.heroY,this.overview||!started?0:p.z);this.focus.lerp(this.desired,1-Math.exp(-6*dt));this.ortho.position.set(this.focus.x+30,this.focus.y+36,this.focus.z+30);this.ortho.lookAt(this.focus);}
-  else{const fx=Math.sin(this.yaw),fz=Math.cos(this.yaw),rx=-Math.cos(this.yaw),rz=Math.sin(this.yaw);this.focus.set(p.x+rx*.8,2.15+p.y*.8+this.heroY,p.z+rz*.8);this.third.position.set(this.focus.x-fx*5.2*Math.cos(this.pitch),this.focus.y+5.2*Math.sin(this.pitch),this.focus.z-fz*5.2*Math.cos(this.pitch));this.third.lookAt(this.focus);}
+  {const fx=Math.sin(this.yaw),fz=Math.cos(this.yaw),rx=-Math.cos(this.yaw),rz=Math.sin(this.yaw);this.focus.set(p.x+rx*.8,2.15+p.y*.8+this.heroY,p.z+rz*.8);this.third.position.set(this.focus.x-fx*5.2*Math.cos(this.pitch),this.focus.y+5.2*Math.sin(this.pitch),this.focus.z-fz*5.2*Math.cos(this.pitch));this.third.lookAt(this.focus);}
 
   if(this.shake>0){this.camera.position.x+=(Math.random()-.5)*this.shake;this.camera.position.y+=(Math.random()-.5)*this.shake;this.shake=Math.max(0,this.shake-dt*1.7);}this.camera.updateMatrixWorld();
  }
@@ -163,7 +163,7 @@ export class GameView{
   const shots=new Set(w.shots.map(s=>s.id));for(const [id,v]of this.shotViews)if(!shots.has(id)){this.scene.remove(v);this.shotViews.delete(id);}
   for(const s of w.shots){let v=this.shotViews.get(s.id);if(!v){v=this.club(this.scene);this.shotViews.set(s.id,v);}v.visible=visibleTo(w,hero,s);v.position.set(s.x,1.15+(s.floor||0)*CASTLE.height,s.z);v.rotation.set(Math.PI/2,this.time*23,0);}
   this.selection.visible=started&&!!nearest&&w.players[w.me||0].held===null;if(nearest)this.selection.position.set(nearest.x,.26+elevation,nearest.z);
-  this.aimRing.visible=started&&!!aim&&this.mode==='iso';this.aimLine.visible=started&&!!aim&&w.players[w.me||0].hasClub;
+  this.aimRing.visible=false;this.aimLine.visible=started&&!!aim&&w.players[w.me||0].hasClub;
   if(aim){const p=w.players[w.me||0],dx=aim.x-p.x,dz=aim.z-p.z,d=Math.hypot(dx,dz),len=Math.min(d,RULES.throwRange);this.aimRing.position.set(aim.x,.25+elevation,aim.z);const pos=this.aimLine.geometry.attributes.position;pos.setXYZ(0,p.x,.35+elevation,p.z);pos.setXYZ(1,p.x+dx/Math.max(.01,d)*len,.35+elevation,p.z+dz/Math.max(.01,d)*len);pos.needsUpdate=true;this.aimLine.geometry.computeBoundingSphere();this.aimLine.computeLineDistances();}
   for(let i=this.effects.length-1;i>=0;i--){const f=this.effects[i];f.life-=dt;f.vy-=13*dt;f.mesh.position.x+=f.vx*dt;f.mesh.position.y+=f.vy*dt;f.mesh.position.z+=f.vz*dt;f.mesh.rotation.x+=dt*8;if(f.life<=0){this.scene.remove(f.mesh);this.effects.splice(i,1);}}
   this.facing.visible=started;this.facing.position.set(hero.x+Math.sin(hero.angle)*1.2,elevation+.25,hero.z+Math.cos(hero.angle)*1.2);this.facing.rotation.set(Math.PI/2,0,-hero.angle);
