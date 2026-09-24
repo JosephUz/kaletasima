@@ -49,7 +49,7 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 | Sağ tık / Q | Sopa fırlat |
 | E | Eşyayı al / bırak / odada sakla |
 | B | Kendi kalende 15 altına eşya |
-| 1 / 2 / 3 | Arka koridordaki tek merdivende kat seç |
+| 1 / 2 / 3 | Arka koridordaki tek merdivende kat seç (0,8 sn tırmanma: karakter ve kamera kata kayar, "↑ 2. KAT" yazısı çıkar; bu sırada yürünmez) |
 | V | İzometrik / omuz üstü kamera |
 | Tab | Omuz kamerasında fareyi bırak / kilitle |
 | Tekerlek | İzometrik yakınlık |

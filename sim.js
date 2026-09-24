@@ -14,7 +14,7 @@ export function createWorld(seed=71,options={}){
  w.random=()=>{w.seed=(w.seed*1664525+1013904223)>>>0;return w.seed/4294967296;};
  for(let i=0;i<count;i++){const a=i*TAU/count,x=Math.sin(a)*w.ring,z=Math.cos(a)*w.ring;
   w.bases.push({id:i,x,z,angle:a,r:RULES.baseRadius});
-  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,hp:RULES.hp,airJumps:0,stun:0,stunTotal:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:i!==0,botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,knockouts:0,stuns:0,steals:0,deposits:0,purchases:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
+  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,hp:RULES.hp,airJumps:0,stun:0,stunTotal:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,climb:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:i!==0,botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,knockouts:0,stuns:0,steals:0,deposits:0,purchases:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
   addItem(w,i,i%5);addItem(w,i,(i+2)%5);
  }
  for(let i=0;i<5;i++){const a=i*TAU/5;addItem(w,null,i,Math.sin(a)*4.1,Math.cos(a)*4.1);}
@@ -58,6 +58,7 @@ export function throwClub(w,id,aim=null){
 }
 export function jump(w,id){
  const p=w.players[id];if(w.winner!==null||p.stun>0)return false;
+ if(p.climb)return false;
  if(p.y===0&&p.vy===0)p.airJumps=0;
  else{if((p.airJumps||0)>=1)return false;p.airJumps=(p.airJumps||0)+1;emit(w,'airjump',{player:id,x:p.x,z:p.z,y:p.y,floor:p.floor||0});}
  p.vy=6;p.stats.jumps++;return true;
@@ -72,7 +73,7 @@ function hitMelee(w,p,v){
  if(v.hp===0){p.stats.knockouts++;faint(w,v);emit(w,'knockout',{player:p.id,victim:v.id,x:v.x,z:v.z});}
 }
 // Bayılma: süre bitince kalesinde sopayla doğar (bkz. step → respawn). Eşya vurulduğu yerde kalır.
-function faint(w,v){v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);}
+function faint(w,v){v.climb=null;v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);}
 function stunPlayer(w,p,v){
  if(allied(w,p.id,v.id))return false;if(v.y>0||v.vy>0){v.stats.dodges++;return false;}if(v.inv>0||v.immune>0||v.stun>0)return false;
  faint(w,v);
@@ -88,7 +89,7 @@ export function harvestTree(w,p){
  emit(w,'treehit',{player:p.id,x:0,z:0});return true;
 }
 export function respawn(w,p){
- dropHeld(w,p);const b=w.bases[p.id];p.x=b.x;p.z=b.z;p.floor=0;p.airJumps=0;p.y=p.vy=p.vx=p.vz=p.px=p.pz=0;p.stun=p.stunTotal=0;p.hp=RULES.hp;p.hasClub=true;p.immune=Math.max(p.immune,2.5);p.inv=1;p.attack=0;p.attackDone=true;p.moveX=p.moveZ=0;p.goal=null;p.botThink=.4;
+ dropHeld(w,p);const b=w.bases[p.id];p.x=b.x;p.z=b.z;p.floor=0;p.airJumps=0;p.y=p.vy=p.vx=p.vz=p.px=p.pz=0;p.stun=p.stunTotal=0;p.hp=RULES.hp;p.hasClub=true;p.immune=Math.max(p.immune,2.5);p.inv=1;p.attack=0;p.attackDone=true;p.moveX=p.moveZ=0;p.climb=null;p.goal=null;p.botThink=.4;
  emit(w,'respawn',{player:p.id,x:p.x,z:p.z});
 }
 function segmentDistance(p,a,b){const dx=b.x-a.x,dz=b.z-a.z,l=dx*dx+dz*dz,t=l?clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/l,0,1):0;return Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t);}
@@ -123,7 +124,7 @@ function chooseGoal(w,p){
 }
 function steer(w,p,target){target=route(w,p,target);const dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz);p.moveX=d>.15?dx/d:0;p.moveZ=d>.15?dz/d:0;}
 function updateBot(w,p,dt){
- if(p.stun>0){p.moveX=p.moveZ=0;return;}
+ if(p.stun>0||p.climb){p.moveX=p.moveZ=0;return;}
  p.botThink-=dt;if(p.botThink<=0||!p.goal){p.goal=chooseGoal(w,p);p.botThink=.35+w.random()*.25;}
  const g=p.goal,own=w.bases[p.id];let target=null;
  if(g.type==='home'||g.type==='buy'){target=roomPoint(own,p.id%4,p.id%3);if(dist(p,target)<.8&&(p.floor||0)===target.floor){if(p.held!==null)interact(w,p.id);if(p.gold>=RULES.price)buy(w,p.id);p.goal=null;}}
@@ -158,6 +159,7 @@ function updateBot(w,p,dt){
 
 }
 export function applyInput(w,p,input,dt){
+ if(p.climb){p.moveX=p.moveZ=0;return;}
  p.moveX=input.x||0;p.moveZ=input.z||0;p.sprint=!!input.sprint;
  if(input.aim&&p.attack<=0){p.angle+=angleDelta(p.angle,Math.atan2(input.aim.x-p.x,input.aim.z-p.z))*(1-Math.exp(-18*dt));}
  else if(Math.hypot(p.moveX,p.moveZ)>.1&&p.attack<=0)p.angle+=angleDelta(p.angle,Math.atan2(p.moveX,p.moveZ))*(1-Math.exp(-16*dt));
@@ -174,10 +176,11 @@ export function step(w,dt,input={},inputs=null){
   const wasStunned=p.stun>0;
   for(const k of ['stun','immune','hurt','inv','attackCd'])p[k]=Math.max(0,p[k]-dt);
   if(wasStunned&&p.stun===0)respawn(w,p);
+  if(p.climb){if(!p.climb.announced){p.climb.announced=true;emit(w,'stairs',{player:p.id,from:p.climb.from,to:p.climb.to});}p.climb.t-=dt;if(p.climb.t<=0){p.floor=p.climb.to;p.climb=null;}}
  }
  for(const p of w.players){
   if(p.bot)updateBot(w,p,dt);
-  const norm=Math.hypot(p.moveX,p.moveZ),speed=(p.held===null?RULES.speed:RULES.carrySpeed)*(p.sprint?RULES.sprint:1)*(p.stun>0?0:p.attack>0?.7:1);
+  const norm=Math.hypot(p.moveX,p.moveZ),speed=(p.held===null?RULES.speed:RULES.carrySpeed)*(p.sprint?RULES.sprint:1)*(p.stun>0||p.climb?0:p.attack>0?.7:1);
   const blend=1-Math.exp(-RULES.accel*dt);p.vx+=(p.moveX/Math.max(1,norm)*speed-p.vx)*blend;p.vz+=(p.moveZ/Math.max(1,norm)*speed-p.vz)*blend;
   p.px*=Math.exp(-RULES.pushDrag*dt);p.pz*=Math.exp(-RULES.pushDrag*dt);
   const ox=p.x,oz=p.z;p.x+=(p.vx+p.px)*dt;p.z+=(p.vz+p.pz)*dt;

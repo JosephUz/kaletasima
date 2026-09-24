@@ -2,6 +2,7 @@ import {worldPoint,CASTLE,walls,roomAt,visibleTo,castleAt} from './castle.js';
 import * as T from 'three';
 import {RULES,COLORS,countItems,dist} from './sim.js';
 const TAU=Math.PI*2;
+const floorY=p=>{const c=p.climb;if(!c)return (p.floor||0)*CASTLE.height;const k=Math.min(1,Math.max(0,1-c.t/c.time)),e=k*k*(3-2*k);return (c.from+(c.to-c.from)*e)*CASTLE.height;};
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function html(el,value){if(el._html!==value){el.innerHTML=value;el._html=value;}}
 
@@ -115,9 +116,10 @@ export class GameView{
  setMode(mode){this.mode=mode;this.camera=mode==='iso'?this.ortho:this.third;this.yaw=this.world.players[this.world.me||0].angle;this.resize();}
  resize(){const a=innerWidth/innerHeight;this.renderer.setSize(innerWidth,innerHeight);this.third.aspect=a;this.third.updateProjectionMatrix();const half=this.overview?Math.max(60,76/a):Math.max(this.zoom,17/a);Object.assign(this.ortho,{left:-half*a,right:half*a,top:half,bottom:-half,near:.1,far:180});this.ortho.updateProjectionMatrix();}
  updateCamera(dt,started){
+  {const hero=this.world.players[this.world.me||0],y=floorY(hero);this.heroY=this.heroY==null||!hero.climb&&Math.abs(this.heroY-y)>CASTLE.height*2.5?y:this.heroY+(y-this.heroY)*(1-Math.exp(-14*dt));}
   const p=this.world.players[this.world.me||0];
-  if(this.mode==='iso'){this.desired.set(this.overview||!started?0:p.x,(p.floor||0)*CASTLE.height,this.overview||!started?0:p.z);this.focus.lerp(this.desired,1-Math.exp(-6*dt));this.ortho.position.set(this.focus.x+30,this.focus.y+36,this.focus.z+30);this.ortho.lookAt(this.focus);}
-  else{const fx=Math.sin(this.yaw),fz=Math.cos(this.yaw),rx=-Math.cos(this.yaw),rz=Math.sin(this.yaw);this.focus.set(p.x+rx*.8,2.15+p.y*.8+(p.floor||0)*CASTLE.height,p.z+rz*.8);this.third.position.set(this.focus.x-fx*5.2*Math.cos(this.pitch),this.focus.y+5.2*Math.sin(this.pitch),this.focus.z-fz*5.2*Math.cos(this.pitch));this.third.lookAt(this.focus);}
+  if(this.mode==='iso'){this.desired.set(this.overview||!started?0:p.x,this.heroY,this.overview||!started?0:p.z);this.focus.lerp(this.desired,1-Math.exp(-6*dt));this.ortho.position.set(this.focus.x+30,this.focus.y+36,this.focus.z+30);this.ortho.lookAt(this.focus);}
+  else{const fx=Math.sin(this.yaw),fz=Math.cos(this.yaw),rx=-Math.cos(this.yaw),rz=Math.sin(this.yaw);this.focus.set(p.x+rx*.8,2.15+p.y*.8+this.heroY,p.z+rz*.8);this.third.position.set(this.focus.x-fx*5.2*Math.cos(this.pitch),this.focus.y+5.2*Math.sin(this.pitch),this.focus.z-fz*5.2*Math.cos(this.pitch));this.third.lookAt(this.focus);}
 
   if(this.shake>0){this.camera.position.x+=(Math.random()-.5)*this.shake;this.camera.position.y+=(Math.random()-.5)*this.shake;this.shake=Math.max(0,this.shake-dt*1.7);}this.camera.updateMatrixWorld();
  }
@@ -127,6 +129,7 @@ export class GameView{
   if(e.type==='airjump')this.burst(e.x,e.y+(e.floor||0)*CASTLE.height+.4,e.z,'#dff0ff',8);
   if(e.type==='treehit'){this.burst(0,3,0,'#ffe086',7);}
   if(e.type==='hit'){this.burst(e.x,1.1,e.z,'#ffdc8c',9);this.floating(e.extend?'+'+e.extend+' SN':e.extend===0?'EN ÇOK 30 SN':e.hp!=null?'-1 CAN':'PAT!',e.x,e.z);if(e.victim===0||e.player===0)this.shake=.16;}
+  if(e.type==='stairs'){const p=this.world.players[e.player];this.floating((e.to>e.from?'↑ ':'↓ ')+(e.to+1)+'. KAT',p.x,p.z);}
   if(e.type==='knockout'){this.burst(e.x,1.4,e.z,'#ff7d6e',18);this.floating('NAKAVT!',e.x,e.z);if(e.victim===0)this.shake=.3;}
   if(e.type==='stun'){this.burst(e.x,1.7,e.z,'#ffdd7e',15);this.floating(e.gold?'SERSEM! -'+e.gold+' ALTIN':'SERSEM!',e.x,e.z);if(e.victim===0)this.shake=.25;}
   if(e.type==='deposit'||e.type==='buy'){this.burst(e.x,1,e.z,'#ffdc87',18);this.floating('+1 EŞYA',e.x,e.z);}
@@ -134,7 +137,7 @@ export class GameView{
  }
  render(w,dt,{started=false,aim=null,nearest=null}={}){
   this.world=w;this.time+=dt;this.updateCamera(dt,started);
-  const hero=w.players[w.me||0],location=roomAt(w,hero),elevation=(hero.floor||0)*CASTLE.height;this.plane.constant=-elevation;this.occlusionTarget.set(hero.x,elevation+hero.y+1.25,hero.z);const cameraDistance=this.camera.position.distanceTo(this.occlusionTarget);this.occlusionRay.set(this.camera.position,this.occlusionTarget.clone().sub(this.camera.position).normalize());
+  const hero=w.players[w.me||0],location=roomAt(w,hero),elevation=hero.climb?this.heroY:(hero.floor||0)*CASTLE.height;this.plane.constant=-elevation;this.occlusionTarget.set(hero.x,elevation+hero.y+1.25,hero.z);const cameraDistance=this.camera.position.distanceTo(this.occlusionTarget);this.occlusionRay.set(this.camera.position,this.occlusionTarget.clone().sub(this.camera.position).normalize());
   for(const b of w.bases){const v=this.baseViews[b.id],n=countItems(w,b.id),here=location?.base===b.id;
    v.p.visible=true;const hit=this.occlusionRay.intersectBox(v.bounds,this.occlusionHit);v.occluded=v.bounds.containsPoint(this.camera.position)||(!!hit&&this.camera.position.distanceTo(hit)<cameraDistance-.25);v.label.suppressed=!v.p.visible||here||v.occluded;
    v.banner.visible=!here&&!v.occluded;
@@ -146,7 +149,7 @@ export class GameView{
    html(v.label.el,'<b style="color:'+this.world.players[b.id].color+'">'+(b.id===hero.id?'SENİN KALE':escape(w.players[b.id].name.toLocaleUpperCase('tr-TR')))+'</b> · '+n+'/'+RULES.target+'<span>3 KAT</span>');
   }
   for(const p of w.players){const v=this.actorViews.get(p.id),speed=Math.hypot(p.vx,p.vz),walk=Math.min(speed/6,1),phase=this.time*13;
-   v.root.visible=p.id===hero.id||visibleTo(w,hero,p);if(!v.root.visible){v.label.suppressed=true;continue;}v.label.suppressed=false;v.root.position.set(p.x,p.y+.2+(p.floor||0)*CASTLE.height,p.z);v.root.rotation.y=p.angle;v.body.rotation.z=p.stun>0?.45+Math.sin(this.time*4)*.12:p.hurt>0?Math.sin(this.time*38)*.11:0;v.body.position.y=Math.abs(Math.sin(phase))*walk*.045;
+   v.root.visible=p.id===hero.id||visibleTo(w,hero,p);if(!v.root.visible){v.label.suppressed=true;continue;}v.label.suppressed=false;v.root.position.set(p.x,p.y+.2+floorY(p),p.z);v.root.rotation.y=p.angle;v.body.rotation.z=p.stun>0?.45+Math.sin(this.time*4)*.12:p.hurt>0?Math.sin(this.time*38)*.11:0;v.body.position.y=Math.abs(Math.sin(phase))*walk*.045;
    v.legs.forEach((l,i)=>l.rotation.x=Math.sin(phase+i*Math.PI)*walk*.65);
    v.arms[0].rotation.x=p.held!==null?-.7:Math.sin(phase+Math.PI)*walk*.5;
    v.arms[1].rotation.x=p.attack>0?-1.2:Math.sin(phase)*walk*.35;v.arms[1].rotation.z=p.attack>0?-.4:0;v.arms[1].rotation.y=p.attack>0?(-1.8+(1-p.attack/.36)*3.4):0;
@@ -157,7 +160,7 @@ export class GameView{
   const itemIds=new Set(w.items.map(i=>i.id));for(const [id,v]of this.itemViews)if(!itemIds.has(id)){this.scene.remove(v);this.itemViews.delete(id);}
   for(const i of w.items){let v=this.itemViews.get(i.id);if(!v){v=this.buildItem(i.kind);this.itemViews.set(i.id,v);}
    v.visible=i.holder===hero.id||visibleTo(w,hero,i);
-   if(i.holder!==null){const p=w.players[i.holder];v.scale.setScalar(.8);v.position.set(p.x-Math.sin(p.angle)*.53,p.y+1.02+(p.floor||0)*CASTLE.height,p.z-Math.cos(p.angle)*.53);v.rotation.set(.15,p.angle,0);}
+   if(i.holder!==null){const p=w.players[i.holder];v.scale.setScalar(.8);v.position.set(p.x-Math.sin(p.angle)*.53,p.y+1.02+floorY(p),p.z-Math.cos(p.angle)*.53);v.rotation.set(.15,p.angle,0);}
    else{v.scale.setScalar(1);v.position.set(i.x,.22+(i.floor||0)*CASTLE.height,i.z);v.rotation.set(0,i.id*.7,0);}
   }
   const coins=new Set(w.coins.map(c=>c.id));for(const [id,v]of this.coinViews)if(!coins.has(id)){this.scene.remove(v);this.coinViews.delete(id);}

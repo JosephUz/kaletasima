@@ -22,7 +22,10 @@ export function walls(b,floor=0){const x=b.x,z=b.z,out=[
 function blocked(w,p,x,z,r=.32){for(const b of w.bases){if(Math.hypot(x-b.x,z-b.z)>12)continue;const q=localPoint(b,{x,z});for(const a of walls({x:0,z:0},p.floor||0)){if(Math.abs(q.x-a.x)<a.w/2+r&&Math.abs(q.z-a.z)<a.d/2+r)return true;}}return false;}
 export function collide(w,p,ox,oz){const x=p.x,z=p.z;p.x=ox;p.z=oz;if(!blocked(w,p,x,oz))p.x=x;else p.vx=p.px=0;if(!blocked(w,p,p.x,z))p.z=z;else p.vz=p.pz=0;}
 export function clearSight(w,a,b){if((a.floor||0)!==(b.floor||0))return false;const n=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.22);for(let i=1;i<n;i++)if(blocked(w,a,a.x+(b.x-a.x)*i/n,a.z+(b.z-a.z)*i/n,0))return false;return true;}
-export function useStairs(w,p,direction){if(!nearStairs(w,p)||p.stun>0||!Number.isInteger(direction))return false;const floor=(p.floor||0)+direction;if(floor<0||floor>=3)return false;p.floor=floor;p.airJumps=0;p.y=p.vy=0;p.vx=p.vz=0;return true;}
+export const CLIMB_TIME=.8;
+// Kat geçişi: oyuncu CLIMB_TIME boyunca merdivende kalır (hareket edemez), sonra yeni katta belirir. Görünüm bu sürede
+// karakteri ve kamerayı iki kat arasında kaydırır; kata çıkıldığı / inildiği böylece anlaşılır.
+export function useStairs(w,p,direction){if(!nearStairs(w,p)||p.stun>0||p.climb||!Number.isInteger(direction)||direction===0)return false;const floor=(p.floor||0)+direction;if(floor<0||floor>=3)return false;p.climb={from:p.floor||0,to:floor,t:CLIMB_TIME,time:CLIMB_TIME};p.airJumps=0;p.y=p.vy=0;p.vx=p.vz=0;return true;}
 // Route through the hall and the actual doorway; never steer through a room wall.
 export function route(w,p,target){const current=castleAt(w,p),destination=castleAt(w,target),r=roomAt(w,p),t=roomAt(w,target);
  if(current){const q=localPoint(current,p),to=localPoint(current,target),same=current===destination,needsFloor=same&&(p.floor||0)!==(target.floor||0),point=(x,z)=>worldPoint(current,x,z,p.floor);

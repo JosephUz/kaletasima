@@ -14,8 +14,8 @@ try{
  await page.keyboard.press('Space');await page.waitForTimeout(140);assert.ok((await page.evaluate(()=>window.__kaleTasima.world().players[0].y))>.1);
  await page.keyboard.press('Space');await page.waitForTimeout(80);assert.equal(await page.evaluate(()=>window.__kaleTasima.world().players[0].airJumps),1);assert.ok(await page.evaluate(()=>window.__kaleTasima.world().players[0].vy>0));await page.keyboard.press('Space');await page.waitForTimeout(60);assert.equal(await page.evaluate(()=>window.__kaleTasima.world().players[0].stats.jumps),2);
  await page.evaluate(()=>{const w=window.__kaleTasima.world(),p=w.players[0],b=w.bases[0];p.x=b.x;p.z=b.z+5.7;p.y=p.vy=0;});await page.waitForTimeout(200);assert.ok(await page.locator('#stairs').isVisible());
- await page.keyboard.press('Digit3');await page.waitForTimeout(150);assert.equal((await page.evaluate(()=>window.__kaleTasima.world().players[0].floor)),2);
- await page.keyboard.press('Digit1');await page.waitForTimeout(150);assert.equal((await page.evaluate(()=>window.__kaleTasima.world().players[0].floor)),0);
+ await page.keyboard.press('Digit3');await page.waitForTimeout(1100);assert.equal((await page.evaluate(()=>window.__kaleTasima.world().players[0].floor)),2);
+ await page.keyboard.press('Digit1');await page.waitForTimeout(1100);assert.equal((await page.evaluate(()=>window.__kaleTasima.world().players[0].floor)),0);
  await page.screenshot({path:'artifacts/02-stairs.png'});
  await page.evaluate(()=>{const w=window.__kaleTasima.world(),p=w.players[0],b=w.bases[0];p.x=b.x-9;p.z=b.z-10;});await page.waitForTimeout(700);
  assert.equal((await page.evaluate(()=>window.__kaleTasima.state())).occluded[0],true);await page.screenshot({path:'artifacts/03-occlusion.png'});
