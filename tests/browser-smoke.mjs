@@ -167,7 +167,7 @@ try {
   assert.equal(await page.locator('#result-table tbody tr').count(), 5);
   await page.screenshot({ path: 'artifacts/08-results.png' });
   await page.locator('#result-home').click();
-  await page.locator('#pvp').click();
+  await page.locator('#create').click();
   await page.locator('#lobby').waitFor({ state: 'visible' });
   assert.equal(await page.locator('.seat').count(), 10);
   const code = await page.locator('#lobby-code').innerText();
@@ -197,15 +197,16 @@ try {
   await page.evaluate(() => document.exitPointerLock());
   await page.locator('#pause').click();
   await page.locator('#leave').click();
-  await page.locator('#coop').click();
+  await page.locator('#create').click();
   await page.locator('#lobby').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('#red-seats .seat:not([disabled])').count(), 0);
-  await page.screenshot({ path: 'artifacts/11-coop-lobby.png' });
+  assert.equal(await page.locator('#red-seats .seat:not([disabled])').count(), 5);
+  assert.match(await page.locator('#lobby-mode').innerText(), /^Co-op/);
+  await page.screenshot({ path: 'artifacts/11-room-lobby.png' });
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify({
       checks:
-        'solo, jump, stair keys, occlusion, shoulder follow, no fog or distance culling, gold tree, club crate resupply, help, results, PvP 2 clients, co-op seats',
+        'solo, jump, stair keys, occlusion, shoulder follow, no fog or distance culling, gold tree, club crate resupply, help, results, PvP 2 clients, single create room',
       errors,
     }),
   );

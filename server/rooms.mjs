@@ -1,10 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { DIFFICULTIES } from '../src/config.js';
 import { ACTIONS, sanitizeInput, snapshotFor } from '../src/net/snapshot.js';
+import { roomMode } from '../src/rules.js';
 import { createWorld, step } from '../src/world.js';
 
 /**
- * Odalar ve lobi (sunucu). Her oda 10 koltukludur; boş koltukları botlar doldurur. Oda sahibi maçı başlatır; maç
+ * Odalar ve lobi (sunucu). Her oda 10 koltukludur (5 mavi, 5 kırmızı); boş koltukları botlar doldurur. Mod seçilmez:
+ * oyuncuların hepsi aynı takıma oturursa co-op, iki takımda da oyuncu varsa PvP olur (bkz. src/rules.js roomMode). Oda sahibi maçı başlatır; maç
  * sürerken boş koltuğa katılınabilir, kopan oyuncuyu bot devralır ve 60 sn içinde aynı sekmeden dönerse koltuğuna oturur.
  * Simülasyon 30 Hz koşar, her oyuncuya kendi gördüğü durum 15 Hz gönderilir (bkz. src/net/snapshot.js).
  */
@@ -15,10 +17,11 @@ export function createRooms() {
     if (c?.ws?.readyState === 1 && c.ws.bufferedAmount < 256 * 1024) c.ws.send(JSON.stringify(m));
   };
   const error = (c, message) => send(c, { type: 'error', message });
+  const seated = r => r.seats.map((t, i) => (t && clients.get(t) ? i : -1)).filter(i => i >= 0);
   const lobby = r => ({
     type: 'lobby',
     code: r.code,
-    mode: r.mode,
+    mode: roomMode(seated(r)),
     difficulty: r.difficulty,
     state: r.state,
     host: clients.get(r.host)?.id,
@@ -70,7 +73,7 @@ export function createRooms() {
     else broadcast(r);
   }
   function occupy(r, c, slot) {
-    if (r.seats[slot] || slot < 0 || slot > 9 || (r.mode === 'coop' && slot % 2)) return false;
+    if (r.seats[slot] || slot < 0 || slot > 9) return false;
     const old = r.seats.indexOf(c.token);
     if (old >= 0) r.seats[old] = null;
     r.seats[slot] = c.token;
@@ -79,12 +82,14 @@ export function createRooms() {
     if (r.world) {
       Object.assign(r.world.players[slot], { bot: false, name: c.name });
       delete r.inputs[slot];
+      // Maç sürerken karşı takıma katılan olursa co-op PvP'ye döner.
+      r.world.mode = roomMode(seated(r));
     }
     return true;
   }
   function begin(r) {
     r.world = createWorld(71, {
-      mode: r.mode,
+      mode: roomMode(seated(r)),
       difficulty: r.difficulty,
       humans: r.seats.map((t, i) => (clients.get(t)?.ws ? i : -1)).filter(i => i >= 0),
     });
@@ -204,7 +209,6 @@ export function createRooms() {
           const code = randomBytes(3).toString('hex').toUpperCase();
           const r = {
             code,
-            mode: m.mode === 'coop' ? 'coop' : 'pvp',
             difficulty: DIFFICULTIES.includes(m.difficulty) ? m.difficulty : 'normal',
             host: c.token,
             seats: Array(10).fill(null),
@@ -225,7 +229,7 @@ export function createRooms() {
             broadcast(r);
             return;
           }
-          const slot = r.seats.findIndex((t, i) => !t && (r.mode === 'pvp' || i % 2 === 0));
+          const slot = r.seats.findIndex(t => !t);
           if (slot < 0) return error(c, 'Bu odada boş oyuncu koltuğu yok.');
           leave(c);
           occupy(r, c, slot);

@@ -22,6 +22,11 @@ export function castleInvaded(w, id) {
   if (w.replicated) return id === w.me && w.homeInvaded === true;
   return w.players.some(v => !allied(w, id, v.id) && !(v.stun > 0) && inside(v, w.bases[id]));
 }
+/**
+ * Odanın modu oturan oyunculardan çıkar: 10 koltuk, çift numaralılar mavi, tek numaralılar kırmızı takım. Oyuncuların
+ * hepsi aynı takımdaysa co-op (botlara karşı birlikte), iki takımda da oyuncu varsa PvP.
+ */
+export const roomMode = humanSlots => (new Set(humanSlots.map(i => i % 2)).size > 1 ? 'pvp' : 'coop');
 /** Kolay / normal'de bot kalesinin eşyaları hep zemin kata konur. */
 export const botGroundFloor = (w, id) => !!w.players[id]?.bot && w.difficulty !== 'hard';
 /** Olay kuyruğu: görünüm ve ses bunları okur, sunucu olayları ilgili oyunculara pakette gönderir. */

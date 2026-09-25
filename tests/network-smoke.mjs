@@ -45,7 +45,7 @@ async function client(name, token) {
 try {
   const a = await client('Host'),
     b = await client('Guest');
-  a.send('create', { mode: 'pvp' });
+  a.send('create', {});
   const lobby = await a.next('lobby');
   assert.equal(lobby.seats.length, 10);
   assert.ok(!JSON.stringify(lobby).includes(a.welcome.token), 'secret token is not in lobby');
@@ -97,15 +97,22 @@ try {
   const migrated = await back.next('lobby', m => m.host !== a.welcome.id);
   assert.ok(migrated.host);
   assert.equal(migrated.seats.filter(s => s.id).length, 9);
-  extra.send('create', { mode: 'coop' });
-  const coop = await extra.next('lobby');
+  // Mod koltuklardan çıkar: tek oyuncu (mavi) co-op; kırmızıya geçince yine tek takım; iki takımda oyuncu varsa PvP.
+  extra.send('create', {});
+  const room = await extra.next('lobby');
+  assert.equal(room.mode, 'coop');
+  assert.equal(room.seats.filter(s => s.team === 0).length, 5);
   extra.send('seat', { slot: 1 });
-  assert.match((await extra.next('error')).message, /koltuğa/);
-  assert.equal(coop.seats.filter(s => s.team === 0).length, 5);
+  assert.equal((await extra.next('lobby', m => m.seats[1].id === extra.welcome.id)).mode, 'coop');
+  back.send('join', { code: room.code });
+  const mixed = await extra.next('lobby', m => m.seats.filter(s => s.id).length === 2);
+  assert.equal(mixed.mode, 'pvp');
+  back.send('seat', { slot: 3 });
+  assert.equal((await extra.next('lobby', m => m.seats[3].id === back.welcome.id)).mode, 'coop');
   console.log(
     JSON.stringify({
       checks:
-        '10 real WebSocket clients, fixed seats, host-only start, two teams, movement/jump, private token, hidden state, reconnect, room full, host migration, co-op restriction',
+        '10 real WebSocket clients, fixed seats, host-only start, two teams, movement/jump, private token, hidden state, reconnect, room full, host migration, co-op / PvP from seats',
     }),
   );
 } finally {

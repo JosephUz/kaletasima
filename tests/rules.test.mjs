@@ -18,7 +18,7 @@ import { jump, melee, throwClub } from '../src/combat.js';
 import { CASTLE, RULES } from '../src/config.js';
 import { addItem, buy, clubCrate, harvestTree, interact, nearClubCrate } from '../src/items.js';
 import { sanitizeInput, snapshotFor } from '../src/net/snapshot.js';
-import { castleInvaded, countItems, dist } from '../src/rules.js';
+import { castleInvaded, countItems, dist, roomMode } from '../src/rules.js';
 import { createWorld, step } from '../src/world.js';
 const setup = (mode = 'solo') => {
   const w = createWorld(71, { mode });
@@ -947,4 +947,12 @@ test('botlar ara sıra ağaca odaklanır, sırayla; geri sayımda ağaç zamanı
   w.time = 100;
   p.treeUntil = 0;
   assert.notEqual(chooseGoal(w, p).type, 'tree');
+});
+
+test('oda modu koltuklardan çıkar: tek takım co-op, iki takım PvP', () => {
+  assert.equal(roomMode([0]), 'coop');
+  assert.equal(roomMode([0, 2, 4]), 'coop');
+  assert.equal(roomMode([1, 3]), 'coop');
+  assert.equal(roomMode([0, 3]), 'pvp');
+  assert.equal(roomMode([]), 'coop');
 });

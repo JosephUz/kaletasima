@@ -3,7 +3,7 @@ import { $, escapeHtml } from './html.js';
 import { countItems } from './rules.js';
 
 /**
- * Ekranlar: giriş (ad, bot zorluğu, modlar, odaya katıl), lobi (koltuklar), menü, kısayollar, maç karnesi. Düğmelerin
+ * Ekranlar: giriş (ad, bot zorluğu, tek başına, oda kur, odaya katıl), lobi (koltuklar), menü, kısayollar, maç karnesi. Düğmelerin
  * bağlantıları da buradadır; oyunu başlatan / bitiren işler main.js'ten actions ile gelir.
  *
  * actions: startSolo(), goHome(), connectAction(type, body)
@@ -71,11 +71,10 @@ export function createScreens(game, ui, input, actions) {
     const net = game.net;
     $('#lobby-code').textContent = lobby.code;
     $('#lobby-mode').textContent =
-      (lobby.mode === 'coop'
-        ? "Co-op · 5'e 5 · İnsanlar mavi takımda"
-        : "PvP · 5'e 5 · Boş koltuğa tıklayıp takımını seç") +
-      ' · Zorluk: ' +
-      (DIFFICULTY_LABEL[lobby.difficulty] || 'Normal');
+      (lobby.mode === 'pvp' ? 'PvP' : 'Co-op') +
+      " · 5'e 5 · Zorluk: " +
+      (DIFFICULTY_LABEL[lobby.difficulty] || 'Normal') +
+      '. Boş koltuğa tıklayıp takımını seç: herkes aynı takımdaysa co-op, iki takımda da oyuncu varsa PvP olur.';
     for (const team of [0, 1]) {
       const root = $(team === 0 ? '#blue-seats' : '#red-seats');
       root.replaceChildren();
@@ -83,7 +82,7 @@ export function createScreens(game, ui, input, actions) {
         const b = document.createElement('button');
         b.className = 'seat' + (s.id === net.id ? ' me' : '');
         b.dataset.slot = s.slot;
-        b.disabled = !!s.id || (lobby.mode === 'coop' && team === 1) || lobby.state !== 'lobby';
+        b.disabled = !!s.id || lobby.state !== 'lobby';
         b.textContent =
           (s.id === net.id ? '● ' : '') +
           s.name +
@@ -141,8 +140,7 @@ export function createScreens(game, ui, input, actions) {
 
   // Giriş ekranı
   $('#solo').onclick = actions.startSolo;
-  $('#coop').onclick = () => actions.connectAction('create', { mode: 'coop', difficulty });
-  $('#pvp').onclick = () => actions.connectAction('create', { mode: 'pvp', difficulty });
+  $('#create').onclick = () => actions.connectAction('create', { difficulty });
   for (const b of document.querySelectorAll('[data-difficulty]')) b.onclick = () => setDifficulty(b.dataset.difficulty);
   setDifficulty(difficulty);
   $('#join-toggle').onclick = () => {

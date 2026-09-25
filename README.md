@@ -17,8 +17,9 @@ Konteyner adı `kale-tasima`; otomatik yeniden başlatma ve `/health` sağlık k
 ## Modlar
 
 - **Tek başına:** sen ve 4 rakip bot, 5 kale.
-- **Co-op:** 5 maviye karşı 5 kırmızı. İnsanlar mavi takımdaki boş koltuklara geçer; diğer koltuklar bottur.
-- **PvP:** 5 maviye karşı 5 kırmızı. İki takımın boş koltuklarına da oturulur. Kaça kaç seçimi yoktur.
+- **Oda kur:** 5 maviye karşı 5 kırmızı, 10 koltuk. Mod seçilmez; oyuncular istedikleri koltuğa oturur, boş koltuklar bottur.
+  Oyuncuların hepsi aynı takımdaysa **Co-op** (botlara karşı birlikte), iki takımda da oyuncu varsa **PvP** olur. Lobide o
+  anki mod görünür; maç sürerken karşı takıma katılan olursa maç PvP'ye döner. Kaça kaç seçimi yoktur.
 - On kişilik modlarda daha geniş bir çember vardır; mavi ve kırmızı kaleler dönüşümlü dizilir. Bütün kapılar merkeze bakar.
 
 **Bot zorluğu** giriş ekranında seçilir (Kolay / Normal / Zor, varsayılan Normal; tarayıcı hatırlar). Çevrim içi odada oda kuranın seçimi geçerlidir ve lobide görünür.
