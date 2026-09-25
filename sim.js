@@ -79,9 +79,10 @@ function hitMelee(w,p,v){
  if(v.hp===0){p.stats.knockouts++;const gold=faint(w,v);emit(w,'knockout',{player:p.id,victim:v.id,gold,x:v.x,z:v.z});}
 }
 // Bayılma (fırlatılan sopa ya da can bitmesi): süre bitince kalesinde sopayla doğar (bkz. step → respawn). Eşya vurulduğu
-// yerde kalır. Her bayılışta bakiyeden en çok 5 altın yere düşer (eksik üretilmez); kale içinde düşeni yalnız o kalenin takımı toplar.
+// yerde kalır. Her bayılışta 5 altın yere düşer; bayılanın altını yetmese de düşer (eksik tutar üretilir, bakiye eksiye inmez),
+// yani rakibi bayıltmak her zaman altın kazandırır. Kale içinde düşeni yalnız o kalenin takımı toplar.
 function faint(w,v){v.climb=null;v.stun=v.stunTotal=RULES.stun;v.immune=RULES.stun+2.5;dropHeld(w,v);
- const base=castleAt(w,v),gold=Math.min(RULES.stunGold,v.gold);v.gold-=gold;
+ const base=castleAt(w,v),gold=RULES.stunGold;v.gold=Math.max(0,v.gold-gold);
  for(let i=0;i<gold;i++){const coin=addCoin(w,v.x,v.z,1,v.id);coin.floor=v.floor||0;if(base)coin.castleOwner=base.id;}
  return gold;
 }
@@ -108,25 +109,29 @@ function updateShots(w,dt){for(let n=w.shots.length-1;n>=0;n--){const s=w.shots[
  if(!finished)for(const v of w.players)if(!allied(w,p.id,v.id)&&(v.floor||0)===s.floor&&clearSight(w,s,v)&&segmentDistance(v,old,s)<.8){if(stunPlayer(w,p,v)){s.hit=true;finished=true;break;}}
  if(finished){if(p.shot===s.id)p.shot=null;w.shots.splice(n,1);}
 }}
-function chooseGoal(w,p){
+// Botun hedeflediği rakip: 'b'+kale/oyuncu id (baskın, arama, soygun aynı rakip sayılır) ya da yerdeki eşya için 'i'+id.
+function goalKey(w,g){if(!g)return null;if(g.type==='rob')return 'b'+g.id;if(g.type==='search')return 'b'+g.base;if(g.type==='raid'){const i=w.items.find(i=>i.id===g.id);return i?.base!=null?'b'+i.base:'i'+g.id;}return null;}
+// Başka bir (ayakta) bot bu hedefe zaten gidiyor mu? Botlar tek bir yere çullanmasın diye.
+function targetTaken(w,p,key){return w.players.some(o=>o!==p&&o.bot&&o.stun<=0&&goalKey(w,o.goal)===key);}
+export function chooseGoal(w,p){
  const own=w.bases[p.id];
  if(!p.hasClub)return{type:'rearm'};
  const intruders=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&inside(v,own,-.2)).sort((a,b)=>dist(p,a)-dist(p,b));
  if(intruders.length&&dist(p,own)<CASTLE.halfZ+10)return{type:'defend',id:intruders[0].id};
  if(p.held!==null||countItems(w,p.id)>=RULES.target)return{type:'home'};
- if(w.claimant!==null&&!allied(w,p.id,w.claimant)){const rivals=w.bases.filter(b=>!allied(w,p.id,b.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));const b=rivals[0];if(p.goal?.type==='search'&&p.goal.base===b.id)return p.goal;return{type:'search',base:b.id,room:Math.floor(w.random()*4),floor:Math.floor(w.random()*3)};}
+ if(w.claimant!==null&&!allied(w,p.id,w.claimant)){const rivals=w.bases.filter(b=>!allied(w,p.id,b.id)&&!targetTaken(w,p,'b'+b.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));const b=rivals[0];if(b){if(p.goal?.type==='search'&&p.goal.base===b.id)return p.goal;return{type:'search',base:b.id,room:Math.floor(w.random()*4),floor:Math.floor(w.random()*3)};}}
  if(p.gold>=RULES.price)return{type:'buy'};
  let best=null,score=-Infinity;
- for(const i of w.items){if(i.holder!==null||(i.base!==null&&allied(w,i.base,p.id))||!visibleTo(w,p,i))continue;
+ for(const i of w.items){if(i.holder!==null||(i.base!==null&&allied(w,i.base,p.id))||!visibleTo(w,p,i)||targetTaken(w,p,i.base!=null?'b'+i.base:'i'+i.id))continue;
  const b=i.base===null?null:w.bases[i.base],d=dist(p,i),s=(b?10:8)-d*.35+(b?countItems(w,b.id)*.8:0)+w.random()*2;
  if(s>score){score=s;best={type:'raid',id:i.id};}}
  const coin=w.coins.filter(c=>(c.castleOwner==null||allied(w,p.id,c.castleOwner))&&dist(p,c)<9).sort((a,b)=>dist(p,a)-dist(p,b))[0];
  if(coin&&p.gold<RULES.price&&(dist(p,coin)<3.5||score<4))return{type:'coin',id:coin.id};
- const rich=w.players.filter(v=>!allied(w,p.id,v.id)&&v.gold>=30&&visibleTo(w,p,v)&&!inside(v,w.bases[v.id])).sort((a,b)=>b.gold-a.gold||dist(p,a)-dist(p,b))[0];
+ const rich=w.players.filter(v=>!allied(w,p.id,v.id)&&v.gold>=30&&visibleTo(w,p,v)&&!inside(v,w.bases[v.id])&&!targetTaken(w,p,'b'+v.id)).sort((a,b)=>b.gold-a.gold||dist(p,a)-dist(p,b))[0];
  if(rich)return{type:'rob',id:rich.id};
  if(best)return best;
  if(['search','tree'].includes(p.goal?.type)&&p.strategyUntil>w.time)return p.goal;
- const richest=w.bases.filter(b=>!allied(w,b.id,p.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));
+ const richest=w.bases.filter(b=>!allied(w,b.id,p.id)&&!targetTaken(w,p,'b'+b.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));
  const b=richest[0],leaderScore=b?countItems(w,b.id):0;
  if(b&&(leaderScore>2||w.claimant!==null)&&w.random()<.8){if(p.goal?.type==='search'&&p.goal.base===b.id)return p.goal;p.strategyUntil=w.time+14;return{type:'search',base:b.id,room:Math.floor(w.random()*4),floor:Math.floor(w.random()*3)};}
  p.strategyUntil=w.time+10;return{type:'tree'};

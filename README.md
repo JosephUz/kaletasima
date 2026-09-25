@@ -41,7 +41,7 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 - **Zıplarken sopa ve fırlatılan sopa isabetleri etkisizdir.** Havadayken Boşluk'a tekrar basarak ikinci kez zıplayabilirsin. İkinci basış yükselişi yeniden başlatır; üçüncü zıplama yoktur. Yere inince hakların yenilenir.
 - Fırlatılan sopa can götürmez; bayıltır ve eldeki eşyayı düşürür. Hazırlanma göstergesi karakterin üstündedir, hazır olunca kaybolur.
 - Bayılıp ya da canı bitip kalesinde doğan oyuncu her zaman elinde sopayla doğar.
-- Botlar güçlü rakibi ve kazanma sayacı başlayan takımı hedefler; katları arar, ağaçtan altın çıkarır, eşya satın alır, kaçan taşıyıcıya fırlatılan sopa atar ve tehditlerden zıplayarak kaçınır. Baygın rakibe sopa fırlatmazlar.
+- Botlar güçlü rakibi ve kazanma sayacı başlayan takımı hedefler; katları arar, ağaçtan altın çıkarır, eşya satın alır, kaçan taşıyıcıya fırlatılan sopa atar ve tehditlerden zıplayarak kaçınır. Baygın rakibe sopa fırlatmazlar. Bir rakibe (kalesine, kendisine ya da kalesindeki eşyaya) bir bot yöneldiyse başka bot o rakibi seçmez; botlar tek yere çullanmaz.
 
 ## Kısayollar
 
@@ -88,4 +88,4 @@ Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesle
 
 - Sopa fırlatma menzili 24 birimdir. Botlar gelen sopaya 350–550 ms sonra, her sopa için tek seferde %35 olasılıkla zıplamayı dener.
 
-- **Her bayılışta** (fırlatılan sopa ya da can bitmesi, kendi kalesinde de) en çok 5 altın yere düşer; yalnız mevcut bakiyeden düşülür, eksik tutar üretilmez. Yeni altının tek kaynağı altın ağacıdır. Kale içinde düşen altını yalnız o kalenin takımı toplar.
+- **Her bayılışta** (fırlatılan sopa ya da can bitmesi, kendi kalesinde de) 5 altın yere düşer; bayılanın altını yetmese de düşer (eksik tutar üretilir, bakiye eksiye inmez). Rakibi bayıltmak her zaman altın kazandırır; bunun dışında yeni altın yalnız altın ağacından çıkar. Kale içinde düşen altını yalnız o kalenin takımı toplar.
