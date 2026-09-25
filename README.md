@@ -75,7 +75,7 @@ Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesle
 - Sersemleme 10 saniyedir; süre bitince oyuncu kendi kalesinin zemin katında elinde sopayla ayılır, taşıdığı eşya vurulduğu yerde kalır. Ardından 2,5 saniye yeniden sersemleme koruması vardır. Sersemken sopa kullanılabilir ve başlamış savuruş iptal olmaz. Botlar sopadan kusursuz zıplamaz; dövüş kararları 220–400 ms aralıklıdır.
 - Her kale iki eşya ile başlar; takımlı maçta başlangıç toplamı takım başına 10 eşyadır.
 
-- Kalene rakip girdiğinde ekran kenarları kırmızı yanıp söner. Son rakip çıkınca uyarı kapanır; dost oyuncular alarmı tetiklemez. Çevrim içi maçta uzakta olsan da kendi kalenin alarmını alırsın.
+- Kalene rakip girdiğinde ekran kenarları kırmızı yanıp söner. Son rakip çıkınca ya da kaledeki rakiplerin hepsi baygınken uyarı kapanır; baygın davetsiz ve dost oyuncular alarmı tetiklemez. Çevrim içi maçta uzakta olsan da kendi kalenin alarmını alırsın.
 
 - Sağ tık / Q eldeki tek sopayı fırlatır. Sopa isabette, duvarda veya menzil sonunda kaybolur; geri dönmez ve süreyle yenilenmez. Silahsızken herhangi bir kalenin kapısının önündeki kasaya yaklaş ve E ile ücretsiz yeni sopa al. Botlar da en yakın kasaya gider. Kalede doğmak / ayılmak yeni sopa verir.
 

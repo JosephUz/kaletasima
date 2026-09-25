@@ -6,7 +6,8 @@ export const NAMES=Array.from({length:10},(_,i)=>'Bot-'+(i+1));
 const TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function inside(p,b,margin=0){const q=localPoint(b,p);return Math.abs(q.x)<CASTLE.halfX+margin&&Math.abs(q.z)<CASTLE.halfZ+margin;}
-export function castleInvaded(w,id){if(w.replicated)return id===w.me&&w.homeInvaded===true;return w.players.some(v=>!allied(w,id,v.id)&&inside(v,w.bases[id]));}
+// Kale alarmı: kalede baygın olmayan bir rakip varsa. Baygın davetsiz tehdit sayılmaz (ayılınca kendi kalesine döner).
+export function castleInvaded(w,id){if(w.replicated)return id===w.me&&w.homeInvaded===true;return w.players.some(v=>!allied(w,id,v.id)&&!(v.stun>0)&&inside(v,w.bases[id]));}
 export function angleDelta(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a));}
 export function createWorld(seed=71,options={}){
  const mode=options.mode||'solo',count=mode==='solo'?5:10;
