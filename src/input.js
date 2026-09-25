@@ -1,34 +1,90 @@
+import { allied } from './castle.js';
+import { ISO } from './config.js';
+import { createTouch, TOUCH } from './touch.js';
+
+/** Dokunmatik düğmeler (sağ alt): VUR basılı tutulunca vurmaya devam eder (sol tık basılı gibi). */
+const BUTTONS = [
+  { id: 'hit', label: 'VUR', sub: 'TUT: SÜREKLİ', cls: 'big' },
+  { id: 'throw', label: 'FIRLAT' },
+  { id: 'grab', label: 'TAŞI', sub: 'AL / BIRAK' },
+  { id: 'jump', label: 'ZIPLA', sub: 'HAVADA ×2' },
+];
+
 /**
  * Girdi: klavye, fare ve fare kilidi (omuz üstü kamera). Basılı tuşlar sürekli okunur; tek karelik eylemler (vur, fırlat,
  * al / bırak, satın al, zıpla, kat seç) edges'te birikir ve read() ile bir kez tüketilir.
  *
- * hooks: help(), pause(), closeHelp() — F1 / Esc ekranları (screens.js)
+ * Dokunmatik kipte (hooks.touch, bkz. touch.js) fare kilidi yoktur: sol yarıda joystick (sonuna kadar itmek koşu), sağ
+ * yarıda bakış, düğmeler aynı eylemleri üretir (VUR sol tık, FIRLAT sağ tık, TAŞI E, ZIPLA Boşluk).
+ *
+ * hooks: help(), pause(), closeHelp() — F1 / Esc ekranları (screens.js); camera() — V (kamera); touch — dokunmatik kip
  */
 export function createInput(game, canvas, hooks) {
   const keys = new Set(),
     edges = {},
     pointer = { x: innerWidth / 2, y: innerHeight / 2, inside: false, held: false, middle: false };
   let unlockedAt = -1000;
+  const turn = (dx, dy) => {
+    const view = game.view;
+    view.yaw -= dx * 0.0022;
+    view.pitch = Math.max(0.08, Math.min(0.9, view.pitch + dy * 0.0022));
+  };
+  const pad = hooks.touch
+    ? createTouch(document.body, BUTTONS, {
+        down(id) {
+          if (!game.started || game.screen) return;
+          edges[id] = true;
+          if (id === 'hit') pointer.held = true;
+        },
+        up(id) {
+          if (id === 'hit') pointer.held = false;
+        },
+        look: (dx, dy) => {
+          if (game.started && !game.screen) turn(dx, dy);
+        },
+      })
+    : null;
 
   function unlock() {
     if (document.pointerLockElement) document.exitPointerLock();
   }
   function lock() {
+    if (pad) return;
     try {
       canvas.requestPointerLock?.()?.catch?.(() => {});
     } catch {}
   }
   function clear() {
+    pad?.clear();
     keys.clear();
     pointer.held = pointer.middle = false;
     for (const k in edges) delete edges[k];
     if (game.online) game.net.send('input', { input: {} });
   }
   const hero = () => game.world.players[game.world.me || 0];
-  /** Nişan: ekranın ortası (artı işareti); zemine değmiyorsa bakış yönünde 12 birim ileri. */
+  /**
+   * Nişan: ekranın ortası (artı işareti); zemine değmiyorsa bakış yönünde 12 birim ileri. İzometrikte ekranın ortası
+   * oyuncunun kendisidir: aynı kattaki en yakın rakip (ISO.aimRange), yoksa baktığı yönde ISO.aimAhead ileri.
+   */
   function aim() {
     const p = hero(),
       view = game.view;
+    if (view.mode === 'iso') {
+      const w = game.world;
+      let best = null,
+        bd = ISO.aimRange;
+      for (const o of w.players) {
+        if (o.id === p.id || o.hidden || allied(w, p.id, o.id) || (o.floor || 0) !== (p.floor || 0)) continue;
+        const d = Math.hypot(o.x - p.x, o.z - p.z);
+        if (d < bd) {
+          bd = d;
+          best = o;
+        }
+      }
+      return best
+        ? { x: best.x, z: best.z }
+        : { x: p.x + Math.sin(p.angle) * ISO.aimAhead, z: p.z + Math.cos(p.angle) * ISO.aimAhead };
+    }
     return (
       view.aimFromScreen(innerWidth / 2, innerHeight / 2) || {
         x: p.x + Math.sin(view.yaw) * 12,
@@ -39,17 +95,25 @@ export function createInput(game, canvas, hooks) {
   /** Bu karenin girdisi: kameraya göre hareket yönü, nişan, koşu ve birikmiş eylemler (tüketilir). */
   function read() {
     const view = game.view;
-    const right =
+    let right =
         Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft')),
-      down = Number(keys.has('KeyS') || keys.has('ArrowDown')) - Number(keys.has('KeyW') || keys.has('ArrowUp'));
+      down = Number(keys.has('KeyS') || keys.has('ArrowDown')) - Number(keys.has('KeyW') || keys.has('ArrowUp')),
+      run = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    // Joystick analogdur (yarım itiş yavaş yürür); sonuna kadar itmek koşudur.
+    const stick = pad?.poll();
+    if (stick && !right && !down) {
+      right = stick.x;
+      down = stick.z;
+      run ||= stick.push >= TOUCH.push;
+    }
     let x = -Math.sin(view.yaw) * down - Math.cos(view.yaw) * right,
       z = -Math.cos(view.yaw) * down + Math.sin(view.yaw) * right;
     const len = Math.hypot(x, z);
-    if (len) {
+    if (len > 1) {
       x /= len;
       z /= len;
     }
-    const out = { x, z, aim: aim(), sprint: keys.has('ShiftLeft') || keys.has('ShiftRight'), ...edges };
+    const out = { x, z, aim: aim(), sprint: run, ...edges };
     if (pointer.held) out.hit = true;
     for (const k in edges) delete edges[k];
     return out;
@@ -90,6 +154,7 @@ export function createInput(game, canvas, hooks) {
     keys.add(e.code);
     if (e.repeat) return;
     if (e.code === 'KeyE') edges.grab = true;
+    if (e.code === 'KeyV') hooks.camera?.();
     if (e.code === 'KeyB') edges.buy = true;
     if (e.code === 'Space') edges.jump = true;
     if (e.code === 'KeyF') edges.hit = true;
@@ -100,9 +165,7 @@ export function createInput(game, canvas, hooks) {
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('pointermove', e => {
     if (document.pointerLockElement === canvas || pointer.middle) {
-      const view = game.view;
-      view.yaw -= e.movementX * 0.0022;
-      view.pitch = Math.max(0.08, Math.min(0.9, view.pitch + e.movementY * 0.0022));
+      turn(e.movementX, e.movementY);
     } else {
       pointer.x = e.clientX;
       pointer.y = e.clientY;
@@ -153,5 +216,12 @@ export function createInput(game, canvas, hooks) {
   });
   window.addEventListener('resize', () => game.view.resize());
 
-  return { edges, lock, unlock, clear, aim, read };
+  /** Dokunmatik düğmeler yalnız maç sırasında görünür; TAŞI yakında alınacak eşya varken parlar. */
+  function sync(near) {
+    if (!pad) return;
+    pad.show(game.started && !game.screen);
+    pad.button('grab').classList.toggle('ready', !!near);
+  }
+
+  return { edges, lock, unlock, clear, aim, read, sync, touch: !!pad };
 }

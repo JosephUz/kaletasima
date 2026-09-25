@@ -1,9 +1,12 @@
+import { serverUrl } from '../platform.js';
+
 /**
  * Tarayıcı tarafı bağlantı. Sayfa açılınca boşta bir bağlantı kurulur (giriş ekranındaki "çevrim içi" sayısı bundan gelir);
  * oda kurulunca / katılınca aynı bağlantı kullanılır. Kimlik jetonu sekmede saklanır: sayfa yenilenirse ya da bağlantı
- * koparsa aynı koltuğa dönülür. Bağlantı koparsa 1,5 sn'de bir yeniden denenir.
+ * koparsa aynı koltuğa dönülür. Bağlantı koparsa odadayken 1,5 sn'de, boştayken (sunucu kapalı olabilir) 15 sn'de bir
+ * yeniden denenir. ready(true/false): sunucu kabul etti / bağlantı kapandı (oda düğmeleri buna göre açılır ya da "Yakında").
  *
- * hooks: lobby(m), start(world), snapshot(world), error(message), status(message), online(n)
+ * hooks: lobby(m), start(world), snapshot(world), error(message), status(message), online(n), ready(up)
  */
 export class Network {
   constructor(hooks) {
@@ -23,7 +26,7 @@ export class Network {
     if (this.ws?.readyState === 1) return Promise.resolve();
     if (this.connecting) return this.connecting;
     this.connecting = new Promise((resolve, reject) => {
-      const ws = (this.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`));
+      const ws = (this.ws = new WebSocket(serverUrl()));
       let token;
       try {
         token = sessionStorage.getItem('kale.token');
@@ -46,6 +49,7 @@ export class Network {
           } catch {}
           resolve();
           this.hooks.status?.('');
+          this.hooks.ready?.(true);
         } else if (m.type === 'lobby') {
           this.room = m;
           this.hooks.lobby(m);
@@ -63,9 +67,10 @@ export class Network {
         this.online = false;
         this.connecting = null;
         reject(new Error('Bağlantı kapandı.'));
+        this.hooks.ready?.(false);
         if (this.active) {
           this.hooks.status?.('Bağlantı koptu · yeniden bağlanıyor…');
-          this.retry = setTimeout(() => this.connect(this.name).catch(() => {}), 1500);
+          this.retry = setTimeout(() => this.connect(this.name).catch(() => {}), this.room ? 1500 : 15000);
         }
       };
     });

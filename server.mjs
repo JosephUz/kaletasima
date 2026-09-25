@@ -7,7 +7,8 @@ import { createRooms } from './server/rooms.mjs';
 
 /**
  * Tek süreç, tek port: statik dosyalar (oyun) + WebSocket (odalar, lobi, otoriter simülasyon). Cloudflare Tunnel bu
- * portu kaletasima.josephuz.com'a bağlar; tarayıcı ws(s)://aynı-adres ile bağlanır. Kökteki oyun dosyaları, src/ ve
+ * portu kaletasima-sunucu.josephuz.com'a bağlar; oyun dosyaları Cloudflare'deki statik siteden (kaletasima.josephuz.com,
+ * wrangler.jsonc) gelir ve tarayıcı bu adrese bağlanır. Yerelde sayfa da buradan açılır (ws://aynı-adres). Kökteki oyun dosyaları, src/ ve
  * three.js paketi (/vendor/ → node_modules/three/build) dışında hiçbir dosyaya erişim yok.
  */
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -108,7 +109,21 @@ server.on('error', e => {
   console.error(e.code === 'EADDRINUSE' ? port + ' portu kullanımda. PORT değerini değiştirin.' : e);
   process.exitCode = 1;
 });
-const wss = new WebSocketServer({ server, maxPayload: 8192 });
+/**
+ * WebSocket yalnız bilinen sayfalardan: aynı adres (yerelde, aynı ağda), *.josephuz.com (Cloudflare'deki statik site) ve
+ * Android uygulaması (https://localhost). Origin'siz istemciler (testler, araçlar) kabul edilir.
+ */
+function allowedOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try {
+    const u = new URL(origin);
+    return u.host === req.headers.host || u.hostname === 'josephuz.com' || u.hostname.endsWith('.josephuz.com') || u.hostname === 'localhost';
+  } catch {
+    return false;
+  }
+}
+const wss = new WebSocketServer({ server, maxPayload: 8192, verifyClient: ({ req }) => allowedOrigin(req) });
 wss.on('connection', ws => rooms.attach(ws));
 for (const signal of ['SIGINT', 'SIGTERM'])
   process.on(signal, () => {

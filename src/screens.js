@@ -1,5 +1,6 @@
 import { DIFFICULTIES, DIFFICULTY_LABEL } from './config.js';
 import { $, escapeHtml } from './html.js';
+import { onlineEnabled } from './platform.js';
 import { countItems } from './rules.js';
 
 /**
@@ -151,7 +152,23 @@ export function createScreens(game, ui, input, actions) {
   $('#room-code').onkeydown = e => {
     if (e.key === 'Enter') $('#join').click();
   };
-  const code = new URLSearchParams(location.search).get('oda');
+  // Sunucuya bağlanılamadıkça (kapalı ya da config.js → ONLINE ile kapatılmış) oda düğmeleri "Yakında" yazar ve basılmaz;
+  // sunucu kabul edince (main.js → net ready) açılır.
+  function setServer(up) {
+    for (const id of ['create', 'join-toggle', 'join']) {
+      const b = $('#' + id);
+      b.disabled = !up;
+      b.classList.toggle('soon', !up);
+      b.title = up ? '' : 'Çok oyunculu yakında';
+      if (id !== 'join') {
+        const tag = b.querySelector('.soon-tag');
+        if (!up && !tag) b.insertAdjacentHTML('beforeend', '<em class="soon-tag">YAKINDA</em>');
+        else if (up) tag?.remove();
+      }
+    }
+  }
+  setServer(false);
+  const code = onlineEnabled() && new URLSearchParams(location.search).get('oda');
   if (code) {
     $('#join-row').hidden = false;
     $('#room-code').value = code;
@@ -200,5 +217,5 @@ export function createScreens(game, ui, input, actions) {
     else actions.startSolo();
   };
 
-  return { show, help, closeHelp, pause, result, renderLobby, nick, difficulty: () => difficulty };
+  return { show, help, closeHelp, pause, result, renderLobby, nick, setServer, difficulty: () => difficulty };
 }

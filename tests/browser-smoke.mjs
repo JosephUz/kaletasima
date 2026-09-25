@@ -18,12 +18,21 @@ try {
   page.on('console', e => {
     if (e.type() === 'error') errors.push(e.text());
   });
-  await page.goto('http://127.0.0.1:5185/?test=1');
+  await page.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1');
   await page.waitForFunction(() => !!window.__kaleTasima);
   await page.screenshot({ path: 'artifacts/01-home.png' });
   assert.equal(await page.locator('#nickname').inputValue(), 'Kale Taşımacılık');
   await page.locator('#solo').click();
   await page.waitForTimeout(400);
+  // V: izometrik kamera, tekrar V: omuz üstü (masaüstünde omuzla başlar).
+  assert.equal(await page.evaluate(() => window.__kaleTasima.view().mode), 'third');
+  await page.keyboard.press('KeyV');
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(() => window.__kaleTasima.view().mode), 'iso');
+  await page.screenshot({ path: 'artifacts/01b-iso.png' });
+  await page.keyboard.press('KeyV');
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(() => window.__kaleTasima.view().mode), 'third');
   await page.evaluate(() => {
     const w = window.__kaleTasima.world();
     w.players.forEach(p => {
@@ -174,7 +183,7 @@ try {
   const c2 = await browser.newContext({ viewport: { width: 1280, height: 800 } }),
     guest = await c2.newPage();
   guest.on('pageerror', e => errors.push(e.message));
-  await guest.goto('http://127.0.0.1:5185/?test=1&oda=' + code);
+  await guest.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&oda=' + code);
   await guest.locator('#nickname').fill('Rakip');
   await guest.locator('#join').click();
   await guest.locator('#lobby').waitFor({ state: 'visible' });

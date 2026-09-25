@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { roomAt, visibleTo } from '../castle.js';
-import { CASTLE, RULES } from '../config.js';
+import { CASTLE, ISO, RULES } from '../config.js';
 import { escapeHtml, setHtml } from '../html.js';
 import { countItems } from '../rules.js';
 import { effectMethods } from './effects.js';
@@ -42,6 +42,7 @@ export class GameView {
       cone: new T.ConeGeometry(1, 1, 8),
     };
     this.third = new T.PerspectiveCamera(58, 1, 0.1, 300);
+    this.iso = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
     this.camera = this.third;
     this.mode = 'third';
     this.overview = false;
@@ -177,10 +178,10 @@ export class GameView {
       z: this.projected.z,
     };
   }
-  // Tek kamera: omuz üstü (izometrik görünüm yok).
-  setMode() {
-    this.mode = 'third';
-    this.camera = this.third;
+  /** Kamera: 'third' omuz üstü (masaüstü), 'iso' izometrik (telefonda varsayılan); ikisi de aynı yaw ile döner. */
+  setMode(mode = 'third') {
+    this.mode = mode === 'iso' ? 'iso' : 'third';
+    this.camera = this.mode === 'iso' ? this.iso : this.third;
     this.yaw = this.world.players[this.world.me || 0].angle;
     this.resize();
   }
@@ -189,6 +190,8 @@ export class GameView {
     this.renderer.setSize(innerWidth, innerHeight);
     this.third.aspect = a;
     this.third.updateProjectionMatrix();
+    Object.assign(this.iso, { left: -ISO.half * a, right: ISO.half * a, top: ISO.half, bottom: -ISO.half });
+    this.iso.updateProjectionMatrix();
   }
   updateCamera(dt) {
     {
@@ -200,7 +203,15 @@ export class GameView {
           : this.heroY + (y - this.heroY) * (1 - Math.exp(-14 * dt));
     }
     const p = this.world.players[this.world.me || 0];
-    {
+    if (this.mode === 'iso') {
+      // İzometrik: oyuncuyu yukarıdan eğik izler; kadrajın ortası oyuncudur.
+      const fx = Math.sin(this.yaw),
+        fz = Math.cos(this.yaw),
+        back = ISO.dist * Math.cos(ISO.elevation);
+      this.focus.set(p.x, 1 + p.y * 0.5 + this.heroY, p.z);
+      this.iso.position.set(this.focus.x - fx * back, this.focus.y + ISO.dist * Math.sin(ISO.elevation), this.focus.z - fz * back);
+      this.iso.lookAt(this.focus);
+    } else {
       const fx = Math.sin(this.yaw),
         fz = Math.cos(this.yaw),
         rx = -Math.cos(this.yaw),

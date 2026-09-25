@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kale Taşıma</string>
+    <string name="title_activity_main">Kale Taşıma</string>
+    <string name="package_name">com.josephuz.kaletasima</string>
+    <string name="custom_url_scheme">com.josephuz.kaletasima</string>
+</resources>

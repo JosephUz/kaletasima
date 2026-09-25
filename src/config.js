@@ -35,6 +35,12 @@ export const FLOOR_NAMES = ['Zemin kat', 'Orta kat', 'Üst kat'];
 /** Kat geçişi süresi (sn): oyuncu merdivende kalır, görünüm karakteri ve kamerayı iki kat arasında kaydırır. */
 export const CLIMB_TIME = 0.8;
 
+/**
+ * İzometrik kamera (telefonda varsayılan; masaüstünde omuz üstü): kadrajın yarı yüksekliği, uzaklık, eğim (rad). Nişan
+ * yardımlıdır: `aimRange` içindeki en yakın rakip, yoksa baktığın yönde `aimAhead` ileri.
+ */
+export const ISO = Object.freeze({ half: 14, dist: 70, elevation: 0.62, aimRange: 10, aimAhead: 8 });
+
 /** Zorluk: kolay / normal'de botlar eşyalarını hep 1. kata (zemin) koyar; zor'da üç kata dağıtır ve ağaçtan daha çok altın düşürür. */
 export const DIFFICULTIES = ['easy', 'normal', 'hard'];
 export const DIFFICULTY_LABEL = { easy: 'Kolay', normal: 'Normal', hard: 'Zor' };
@@ -53,3 +59,14 @@ export const COLORS = [
 ];
 export const TEAM_COLORS = ['#56b9c6', '#e98b68'];
 export const NAMES = Array.from({ length: 10 }, (_, i) => 'Bot-' + (i + 1));
+
+/**
+ * Çevrim içi (oda kur / odaya katıl, çevrim içi sayısı): `web` tarayıcıda, `app` Android uygulamasında açık mı. Kapalıyken
+ * sunucuya hiç bağlanılmaz, oda düğmeleri "Yakında" yazar; tek başına oyun aynen oynanır (bkz. src/platform.js).
+ */
+export const ONLINE = Object.freeze({ web: true, app: false });
+/**
+ * Çevrim içi oyun sunucusu (WebSocket, Cloudflare Tunnel ile evdeki PC). Oyun dosyaları Cloudflare'deki statik siteden
+ * (kaletasima.josephuz.com) gelir; sayfa sunucunun kendisinden açıldıysa (yerelde, Docker, aynı ağ) aynı adres kullanılır.
+ */
+export const SERVER = 'kaletasima-sunucu.josephuz.com';

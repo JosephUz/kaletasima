@@ -38,3 +38,59 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;font-size:12
 .menu-buttons a.btn{justify-content:flex-start;padding:15px 18px;font-weight:700;font-size:inherit}
 @media(max-width:1100px){.home-top{left:20px;right:20px;top:20px}.home-actions kbd{display:none}.home-content{margin-left:5vw;width:450px}.home h2{font-size:50px}}
 @media(max-width:650px){.home{background:#102d2bd9;align-items:flex-start}.home-top small{display:none}.home-actions button,.home-actions a.btn{padding:8px;font-size:10px}.home-content{width:auto;margin:0 16px;padding-top:95px}.home h2{font-size:40px}.home-content>p{font-size:13px}.home-form,.home #join-row{grid-template-columns:1fr;width:auto}.home-buttons{flex-wrap:wrap}.home-buttons .primary{width:100%}.home-buttons button:not(.primary){flex:1;min-height:46px}.home-meta{flex-wrap:wrap;gap:12px 20px}.rule-cards{gap:16px}.home-note{display:none}}
+
+/* Çevrim içi kapalıyken (uygulama) oda düğmeleri: sönük, "YAKINDA" etiketi. */
+.home-buttons button.soon{position:relative;opacity:.55;cursor:default}.home-buttons button.soon:hover{transform:none;background:#173938e8}
+.soon-tag{position:absolute;top:-9px;right:-6px;padding:3px 7px;border-radius:10px;background:#edc879;color:#243c30;font:900 8px/1 "Segoe UI",Arial,sans-serif;letter-spacing:1px;font-style:normal}
+
+/* Dokunmatik kip (telefon / tablet, ?touch): sol yarı joystick, sağ yarı bakış, sağ altta başparmak düğmeleri. */
+.touch-only{display:none}body.touch .touch-only{display:block}body.touch .desktop-only,body.touch .compact-controls,body.touch kbd,body.touch #help{display:none!important}
+body.touch #scene{cursor:default}
+#touch{position:absolute;inset:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.touch-zone{position:absolute;top:0;bottom:0;z-index:2;touch-action:none}.touch-zone.left{left:0;width:44%}.touch-zone.right{left:44%;right:0}
+.touch-stick{position:fixed;left:0;top:0;width:0;height:0;z-index:6;pointer-events:none}
+.touch-stick::before{content:"";position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;background:#10302bb0;border:2px solid #f1e8cc55;box-shadow:0 6px 24px #0b1f1c66}
+.touch-stick i{position:absolute;left:-27px;top:-27px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff6de,#edc879);box-shadow:0 4px 14px #0b1f1c88}
+.touch-buttons{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));width:250px;height:200px;z-index:6;pointer-events:none}
+.tbtn{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:#173938d9;border:2px solid #f1e8cc55;color:#f7efdf;box-shadow:0 6px 20px #0b1f1c66;pointer-events:auto;touch-action:none;transition:transform .08s,background .12s}
+.tbtn b{font:950 13px/1 "Segoe UI",Arial,sans-serif;letter-spacing:1px}.tbtn small{font:800 7px/1 "Segoe UI",Arial,sans-serif;letter-spacing:1px;margin-top:5px;opacity:.8}
+.tbtn.on{transform:scale(.9);background:#41655ae6}
+.tbtn[data-t=hit]{right:0;bottom:0;width:96px;height:96px;background:#edc879e6;color:#243c30;border-color:#fff3}.tbtn[data-t=hit] b{font-size:18px}.tbtn[data-t=hit].on{background:#ffe0a7}
+.tbtn[data-t=throw]{right:112px;bottom:4px;width:76px;height:76px;border-color:#e98b6899}
+.tbtn[data-t=grab]{right:98px;bottom:96px;width:66px;height:66px}.tbtn[data-t=grab].ready{border-color:#9be58f;box-shadow:0 0 0 3px #9be58f55,0 6px 20px #0b1f1c66;color:#c9f7c0}
+.tbtn[data-t=jump]{right:12px;bottom:112px;width:64px;height:64px}
+#rotate{display:none}
+@media(orientation:portrait){body.touch #rotate{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#273d3c;text-align:center;padding:30px}#rotate strong{font-size:26px;color:#ffd180}#rotate span{font-size:14px;color:#c1d4c7}}
+body.touch .top{top:calc(10px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));right:calc(14px + env(safe-area-inset-right));flex-wrap:nowrap}
+body.touch #home-panel{top:66px;bottom:auto;right:calc(14px + env(safe-area-inset-right));width:168px;padding:10px 12px}
+body.touch #home-panel .home-row{margin:4px 0 7px}body.touch #home-panel .home-row strong{font-size:19px}body.touch #buy{margin-top:9px;padding:9px 10px}body.touch #buy-hint,body.touch #team-count{display:none}
+body.touch .score-stack{top:66px;left:calc(14px + env(safe-area-inset-left));right:auto;width:180px;max-height:calc(100vh - 90px);z-index:5}
+body.touch #event-feed{top:66px;left:calc(14px + env(safe-area-inset-left))}
+body.touch #toast{top:62px}
+body.touch #context{bottom:18px}body.touch #location{bottom:60px}body.touch #state-banner{bottom:100px}body.touch #stairs{bottom:96px;z-index:7}
+body.touch #claim{top:110px}
+
+/* Kısa (yatay telefon) ekranlar: giriş ekranı ve kartlar sıkışır. */
+@media(max-height:560px){
+.home{align-items:flex-start}.home-top{top:calc(10px + env(safe-area-inset-top));left:calc(16px + env(safe-area-inset-left));right:calc(16px + env(safe-area-inset-right))}.home-top small{display:none}.home-top .badge{height:36px;width:30px;font-size:22px}.home-top h1{font-size:18px}
+.home-actions button,.home-actions a.btn{font-size:10px;padding:8px 11px}
+.home-content{padding:62px 0 16px;margin-left:calc(5vw + env(safe-area-inset-left));width:min(470px,72vw)}
+.home h2{font-size:28px;letter-spacing:-1px;margin:8px 0}.home-content>p{font-size:12px;line-height:1.5;margin:0 0 12px}
+.home-form{width:auto;gap:10px}.home-form .field{margin-bottom:10px;gap:5px}.home-form input{padding:9px}.segmented button{padding:7px 0}
+.home-buttons .primary{min-height:44px;width:200px}.home-buttons button{min-height:44px;white-space:nowrap}
+.home-meta{margin-top:10px}.rule-cards,.home-note{display:none}
+.overlay{padding:10px}.card{padding:18px 22px;max-height:94vh}.card h2{font-size:22px;margin:0 0 12px}.help-columns{gap:12px}dl{gap:4px 10px;line-height:1.45;font-size:11px}.menu-buttons{gap:7px}.menu-buttons button,.menu-buttons a.btn{padding:10px 14px}
+}
+
+/* İzometrikte artı yok (nişan yardımlı). */
+body.iso #crosshair{display:none!important}
+/* Telefonda kale kartı tek satırlık küçük şerit: kale simgesi, eşya sayısı, ince ilerleme, kısa "Al" düğmesi. */
+body.touch #home-panel{display:flex;align-items:center;gap:8px;width:auto;padding:5px 6px 5px 10px;border-radius:22px;top:62px}
+body.touch #home-panel>.eyebrow{display:none}
+body.touch #home-panel .home-row{margin:0;gap:6px}
+body.touch #home-panel .home-row strong{font-size:15px;white-space:nowrap}
+body.touch #home-panel .home-row strong::before{content:"♜ ";color:#ffcf79}
+body.touch #home-panel .home-row small{font-size:10px}
+body.touch #home-status{font-size:7px;max-width:62px}
+body.touch #home-panel .home-progress{width:44px;height:3px}
+body.touch #buy{width:auto;margin:0;padding:6px 10px;font-size:11px;gap:5px;border-radius:16px}

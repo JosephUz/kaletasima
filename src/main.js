@@ -3,8 +3,10 @@ import { createInput } from './input.js';
 import { buy, interact } from './items.js';
 import { melee, throwClub } from './combat.js';
 import { Network } from './net/client.js';
+import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
 import { createScreens } from './screens.js';
+import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { GameView } from './view/gameview.js';
 import { createWorld, step } from './world.js';
@@ -15,9 +17,19 @@ import { createWorld, step } from './world.js';
  *  - **Çevrim içi**: sunucu koşar; istemci girdiyi 30 Hz gönderir, gelen paketlerle dünyayı kopyalar ve oyuncu konumlarını
  *    ara değerle yumuşatır. Aynı görünüm kodu çizer.
  * Her karede: (yerel adım / ağ girdisi) -> olaylar -> çizim -> arayüz (0,12 sn'de bir) -> düşük FPS'de kalite azaltma.
+ * Dokunmatik kip (telefon, tablet, Android uygulaması; ?touch ile masaüstünde de): joystick ve düğmeler (touch.js).
+ * Çevrim içi kapalıysa (config.js → ONLINE, ör. uygulamada) sunucuya hiç bağlanılmaz; oda düğmeleri "Yakında" yazar.
  */
 export function start() {
   const canvas = $('#scene');
+  const touch = touchDevice(),
+    networked = onlineEnabled();
+  document.body.classList.toggle('touch', touch);
+  if (touch) {
+    // Telefonda skor tablosu kapalı başlar (Skor düğmesi açar), düğme yazılarında klavye kısayolu yok.
+    $('#score-panel').hidden = true;
+    $('#pause').textContent = 'Menü';
+  }
   const game = {
     world: createWorld(),
     view: null,
@@ -43,10 +55,31 @@ export function start() {
     $('#fatal').hidden = false;
     throw e;
   }
+  /** Kamera: masaüstünde omuz üstüyle, dokunmatikte izometrik başlar; 🎥 ya da V ile geçilir (seçim tarayıcıda hatırlanır). */
+  let savedCam = null;
+  try {
+    savedCam = localStorage.getItem('kale.cam');
+  } catch {}
+  game.camera = touch ? (savedCam === 'third' ? 'third' : 'iso') : savedCam === 'iso' ? 'iso' : 'third';
+  const setCamera = mode => {
+    game.camera = mode;
+    game.view.setMode(mode);
+    document.body.classList.toggle('iso', mode === 'iso');
+    try {
+      localStorage.setItem('kale.cam', mode);
+    } catch {}
+  };
+  const toggleCamera = () => setCamera(game.camera === 'iso' ? 'third' : 'iso');
+  $('#cam-toggle').onclick = toggleCamera;
+  document.body.classList.toggle('iso', game.camera === 'iso');
+  game.view.setMode(game.camera);
+
   const input = createInput(game, canvas, {
     help: () => screens.help(),
     closeHelp: () => screens.closeHelp(),
     pause: () => screens.pause(),
+    camera: () => toggleCamera(),
+    touch,
   });
   const ui = createUI(game);
   const screens = createScreens(game, ui, input, { startSolo, goHome, connectAction });
@@ -56,7 +89,7 @@ export function start() {
     game.view?.dispose();
     game.world = w;
     game.view = new GameView(canvas, w);
-    game.view.setMode();
+    game.view.setMode(game.camera);
     game.view.setQuality(game.quality);
     game.view.overview = false;
     game.view.resize();
@@ -72,6 +105,7 @@ export function start() {
     input.clear();
     ui.update();
     input.lock();
+    if (touch) enterFullscreen();
   }
   function startSolo() {
     net.leave();
@@ -152,9 +186,14 @@ export function start() {
       el.textContent = n > 0 ? '● ' + n + ' çevrim içi' : '';
       el.title = 'Siteyi şu an açık tutan sekme sayısı';
     },
+    ready: up => {
+      screens.setServer(up);
+      if (!up) $('#home-online').textContent = '';
+    },
   });
   game.net = net;
   async function connectAction(type, body) {
+    if (!networked) return;
     $('#home-status-message').textContent = 'Bağlanıyor…';
     try {
       await net.connect(screens.nick());
@@ -211,6 +250,7 @@ export function start() {
     }
     ui.tickToast(dt);
     const playing = game.started && !game.screen;
+    input.sync(playing && ui.nearest());
     game.view.render(game.world, game.screen && !game.online ? 0 : dt, {
       started: game.started,
       aim: playing ? input.aim() : null,
@@ -236,7 +276,16 @@ export function start() {
   ui.update();
   requestAnimationFrame(frame);
   // Boşta bağlantı: giriş ekranındaki "çevrim içi" sayısı için (oda kurulunca / katılınca aynı bağlantı kullanılır).
-  net.connect(screens.nick()).catch(() => {});
+  if (networked) net.connect(screens.nick()).catch(() => {});
+
+  // Android uygulamasında geri tuşu: kısayollarda kapat, maçta menü aç / kapat, giriş ekranında uygulamadan çık.
+  const app = isApp() ? window.Capacitor?.registerPlugin?.('App') : null;
+  app?.addListener('backButton', () => {
+    if (game.screen === 'shortcuts') screens.closeHelp();
+    else if (game.started && (!game.screen || game.screen === 'menu')) screens.pause();
+    else if (game.screen === 'home') app.exitApp();
+    else goHome();
+  });
 
   // Test kancası (tests/browser-smoke.mjs): ?test ile açılınca durum okunur ve adım atılabilir.
   if (new URLSearchParams(location.search).has('test'))

@@ -1,0 +1,14 @@
+{
+  "appId": "com.josephuz.kaletasima",
+  "appName": "Kale Taşıma",
+  "webDir": "dist",
+  "backgroundColor": "#273d3c",
+  "android": {
+    "backgroundColor": "#273d3c"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    }
+  }
+}

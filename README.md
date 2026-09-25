@@ -29,6 +29,14 @@ Konteyner adı `kale-tasima`; otomatik yeniden başlatma ve `/health` sağlık k
 
 Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç devam ederken boş koltuğa katılmak da mümkündür. Kopan oyuncuyu bot devralır; 60 saniye içinde aynı sekmeden yeniden bağlanırsa koltuğuna döner. Oda sahibi ayrılırsa yetki diğer bağlı oyuncuya geçer. Maç sonunda sahibi yeni maç için lobiye dönebilir.
 
+## Telefon ve Android
+
+**Dokunmatik** (telefon, tablet, uygulama; masaüstünde `?touch`): dokunmatik ekran algılanınca açılır, ekran yataydır (dik tutunca "yan çevir" uyarısı). Sol yarıda parmağın değdiği yerde **joystick** belirir, sonuna kadar itmek koşudur; sağ yarıda parmak kaydırmak kamerayı çevirir. Telefonda **izometrik** kamerayla başlar (yukarıdan eğik, oyuncu ortada; kale içindeyken üst katlar ve duvarlar silikleşir): VUR / FIRLAT aynı kattaki en yakın rakibe, yoksa baktığın yöne nişan alır. Üstteki **🎥** omuz üstüne geçirir (artıyla nişan; seçim hatırlanır); masaüstünde omuz üstüyle başlar, **V** ya da 🎥 ile geçilir. Ayarlar `ISO` (config.js). Sağ altta **VUR** (basılı tutunca vurmaya devam eder), **FIRLAT**, **TAŞI** (yakında alınacak eşya varken parlar) ve **ZIPLA**; Eşya al ve kat düğmeleri ekrandakilerdir. Skor tablosu Skor düğmesiyle açılır. Kod: `src/touch.js` (joystick, düğmeler), `src/input.js` (eşleme), `src/platform.js`. Test: `node tests/touch-smoke.mjs` (telefon taklidi, `GAME_URL`).
+
+**Çok oyunculu anahtarı**: `src/config.js` → `ONLINE = { web, app }`: tarayıcıda (`web`) ve Android uygulamasında (`app`) oda kur / odaya katıl açık mı. Uygulamada kapalı: sunucuya hiç bağlanılmaz, oda düğmelerinde **YAKINDA** yazar, tek başına oyun aynen oynanır. Tarayıcıda `?app` ile uygulama kipi denenir.
+
+**Android APK (Android Studio gerekmez)**: JDK 21 ve Android SDK komut satırı araçları `%USERPROFILE%\android` altında taşınabilir kurulu (başka yerdeyse `JAVA_HOME` / `ANDROID_HOME`). `npm run apk` oyun dosyalarını `dist/`e toplar, Capacitor ile `android/` projesine kopyalar, Gradle ile derler: telefona kurulacak imzalı **`apk/KaleTasima.apk`**, Play Store için `apk/KaleTasima.aab`, incelemek için `apk/KaleTasima-debug.apk`. USB hata ayıklama açık telefona doğrudan kurmak için `npm run apk -- --install`. Uygulama (`com.josephuz.kaletasima`) oyunu kendi içinden açar (internetsiz oynanır), yatay ve tam ekrandır, Android geri tuşu menü / geri olur. Yayın anahtarı `android/*-release.jks`, şifresi `android/keystore.properties` (git'e girmez; **yedeklenmeli**). Simge ve açılış görseli `node scripts/icons.mjs`; Play Store görselleri `store/`.
+
 ## Kurallar
 
 - Solo: kalende **10 eşya** biriktirip **60 saniye** koru. Co-op/PvP: **takım toplamı 50 eşya** ve 60 saniye.

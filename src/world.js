@@ -118,10 +118,11 @@ export function applyInput(w, p, input, dt) {
   p.moveX = input.x || 0;
   p.moveZ = input.z || 0;
   p.sprint = !!input.sprint;
-  if (input.aim && p.attack <= 0) {
-    p.angle += angleDelta(p.angle, Math.atan2(input.aim.x - p.x, input.aim.z - p.z)) * (1 - Math.exp(-18 * dt));
-  } else if (Math.hypot(p.moveX, p.moveZ) > 0.1 && p.attack <= 0)
+  // Yürürken gidilen yöne, dururken nişana dönülür (vuruş / fırlatma zaten nişana döndürür).
+  if (Math.hypot(p.moveX, p.moveZ) > 0.1 && p.attack <= 0)
     p.angle += angleDelta(p.angle, Math.atan2(p.moveX, p.moveZ)) * (1 - Math.exp(-16 * dt));
+  else if (input.aim && p.attack <= 0)
+    p.angle += angleDelta(p.angle, Math.atan2(input.aim.x - p.x, input.aim.z - p.z)) * (1 - Math.exp(-18 * dt));
   if (input.jump) jump(w, p.id);
   if (Number.isInteger(input.floor)) useStairs(w, p, input.floor - (p.floor || 0));
   if (input.up) useStairs(w, p, 1);
