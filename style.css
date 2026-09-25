@@ -94,3 +94,21 @@ body.touch #home-panel .home-row small{font-size:10px}
 body.touch #home-status{font-size:7px;max-width:62px}
 body.touch #home-panel .home-progress{width:44px;height:3px}
 body.touch #buy{width:auto;margin:0;padding:6px 10px;font-size:11px;gap:5px;border-radius:16px}
+/* Telefon: skor solda ince tek liste (takım toplamı üstte, oyuncular tek satır) */
+body.touch .score-stack{width:148px;gap:0;padding:6px 9px;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:none;background:#173a39c4;border:1px solid #ffffff1c;border-radius:10px;backdrop-filter:blur(8px)}
+body.touch .score-stack>.standings{padding:0;background:none;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;overflow:visible}
+body.touch .score-stack .eyebrow{display:none}
+body.touch #team-card{border-bottom:1px solid #ffffff1c;padding-bottom:4px;margin-bottom:2px}
+body.touch .team-total{margin:3px 0 5px}
+body.touch .team-total>div:first-child{font-size:10px;margin-bottom:3px}
+body.touch .team-total strong{font-size:12px}
+body.touch .team-total strong small{font-size:8px}
+body.touch .team-total b span{font-size:7px;margin-left:3px}
+body.touch .team-bar{height:3px}
+body.touch .score-stack #players .player-row{grid-template-columns:6px minmax(0,1fr) auto;gap:6px;margin:4px 0}
+body.touch .score-stack .player-dot{width:6px;height:6px}
+body.touch .score-stack .player-info{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.touch .score-stack .score-values{font-size:11px;display:flex;align-items:baseline;gap:5px}
+body.touch .score-stack .score-values small{font-size:0}
+body.touch .score-stack .score-values small::before{content:"♜";font-size:8px;color:#ffcf79;margin-left:1px}
+body.touch .score-stack .score-values span{display:inline;margin:0;font-size:9px;font-weight:400}
