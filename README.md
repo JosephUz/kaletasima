@@ -41,7 +41,7 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 - **Zıplarken sopa ve fırlatılan sopa isabetleri etkisizdir.** Havadayken Boşluk'a tekrar basarak ikinci kez zıplayabilirsin. İkinci basış yükselişi yeniden başlatır; üçüncü zıplama yoktur. Yere inince hakların yenilenir.
 - Fırlatılan sopa can götürmez; bayıltır ve eldeki eşyayı düşürür. Hazırlanma göstergesi karakterin üstündedir, hazır olunca kaybolur.
 - Bayılıp ya da canı bitip kalesinde doğan oyuncu her zaman elinde sopayla doğar.
-- Botlar güçlü rakibi ve kazanma sayacı başlayan takımı hedefler; katları arar, ağaçtan altın çıkarır, eşya satın alır, kaçan taşıyıcıya fırlatılan sopa atar ve tehditlerden zıplayarak kaçınır. Baygın rakibe sopa fırlatmazlar. Bir rakibe (kalesine, kendisine ya da kalesindeki eşyaya) bir bot yöneldiyse başka bot o rakibi seçmez; botlar tek yere çullanmaz.
+- Botlar güçlü rakibi ve kazanma sayacı başlayan takımı hedefler; katları arar, ağaçtan altın çıkarır, eşya satın alır, kaçan taşıyıcıya fırlatılan sopa atar ve tehditlerden zıplayarak kaçınır. Baygın rakibe sopa fırlatmazlar. Bir rakibe (kalesine, kendisine ya da kalesindeki eşyaya) bir bot yöneldiyse başka bot o rakibi seçmez; botlar tek yere çullanmaz. Kazanma geri sayımı yokken meydana (kale dışına) düşmüş eşyaya öncelik verirler. Sürekli eşya çalmazlar: her bot kendi sırasıyla ara sıra 8–12 sn ağaçtan altın çıkarır, sonra 15–30 sn başka işe döner (geri sayımda ağaç zamanı yoktur).
 
 ## Kısayollar
 

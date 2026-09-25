@@ -119,8 +119,12 @@ export function chooseGoal(w,p){
  const intruders=w.players.filter(v=>!allied(w,p.id,v.id)&&visibleTo(w,p,v)&&inside(v,own,-.2)).sort((a,b)=>dist(p,a)-dist(p,b));
  if(intruders.length&&dist(p,own)<CASTLE.halfZ+10)return{type:'defend',id:intruders[0].id};
  if(p.held!==null||countItems(w,p.id)>=RULES.target)return{type:'home'};
+ // Kazanma geri sayımı yokken meydana (kale dışına) düşmüş eşya önceliklidir: en yakın, başka botun gitmediği eşyaya yönel.
+ if(w.claimant===null){const loose=w.items.filter(i=>i.holder===null&&i.base===null&&!castleAt(w,i)&&!targetTaken(w,p,'i'+i.id)).sort((a,b)=>dist(p,a)-dist(p,b))[0];if(loose)return{type:'raid',id:loose.id};}
  if(w.claimant!==null&&!allied(w,p.id,w.claimant)){const rivals=w.bases.filter(b=>!allied(w,p.id,b.id)&&!targetTaken(w,p,'b'+b.id)).sort((a,b)=>countItems(w,b.id)-countItems(w,a.id));const b=rivals[0];if(b){if(p.goal?.type==='search'&&p.goal.base===b.id)return p.goal;return{type:'search',base:b.id,room:Math.floor(w.random()*4),floor:Math.floor(w.random()*3)};}}
  if(p.gold>=RULES.price)return{type:'buy'};
+ // Ara sıra ağaç zamanı: bot yalnız eşya çalmaz; her bot kendi sırasıyla 8–12 sn ağaçtan altın çıkarır, sonra 15–30 sn başka işe döner.
+ if(w.claimant===null){if(p.treeUntil>w.time)return{type:'tree'};if(w.time>=(p.nextTreeAt??10+p.id*4)){p.treeUntil=w.time+8+w.random()*4;p.nextTreeAt=p.treeUntil+15+w.random()*15;return{type:'tree'};}}
  let best=null,score=-Infinity;
  for(const i of w.items){if(i.holder!==null||(i.base!==null&&allied(w,i.base,p.id))||!visibleTo(w,p,i)||targetTaken(w,p,i.base!=null?'b'+i.base:'i'+i.id))continue;
  const b=i.base===null?null:w.bases[i.base],d=dist(p,i),s=(b?10:8)-d*.35+(b?countItems(w,b.id)*.8:0)+w.random()*2;
