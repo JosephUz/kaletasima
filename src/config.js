@@ -17,7 +17,7 @@ export const RULES = Object.freeze({
   /** Can: her sopa darbesi 1 götürür, 0 olunca bayılır. */
   hp: 3,
   target: 10,
-  teamTarget: 20,
+  teamTarget: 50,
   winHold: 60,
   price: 15,
   /** Her bayılışta yere düşen altın (bayılanın altını yetmese de). */

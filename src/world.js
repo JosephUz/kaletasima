@@ -213,7 +213,7 @@ function updateCoins(w, dt) {
   }
 }
 
-/** Kazanma: solo 10, takım toplamı 20 eşya; hedefte RULES.winHold sn kesintisiz kalan kazanır. */
+/** Kazanma: solo 10, takım toplamı 50 eşya; hedefte RULES.winHold sn kesintisiz kalan kazanır. */
 function updateClaim(w, dt) {
   const scores =
     w.mode === 'solo'

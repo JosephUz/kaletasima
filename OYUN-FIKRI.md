@@ -4,7 +4,7 @@ Oyuncular kalelerinin katlarında hazineler saklar; rakip kalelerde kat kat aray
 
 Solo 5 kişilik serbest rekabet; co-op ve PvP sabit iki takım, 5'e 5. Boş koltukları botlar doldurur. Kaleler merkeze bakar, takımlar çemberde dönüşümlü yerleşir.
 
-Kazanmak için solo kalede 10 veya takım toplamında 20 eşya ve 60 saniye kesintisiz savunma gerekir. Kale kapıları hep açıktır; herkes baskın yapabilir. Botlar lideri önceliklendirir.
+Kazanmak için solo kalede 10 veya takım toplamında 50 eşya ve 60 saniye kesintisiz savunma gerekir. Kale kapıları hep açıktır; herkes baskın yapabilir. Botlar lideri önceliklendirir.
 
 Herkesin 3 canı vardır; sopa darbesi altın düşürmez, can götürür. Can bitince oyuncu bayılır; süre sonunda kalesinde sopayla doğar, bu arada kalesi korumasızdır. Baygına her vuruş bayılmayı 1 sn uzatır (en çok 30 sn). Fırlatılan sopa sersemletir. Her bayılışta 5 altın düşer (bayılanın altını olmasa da). Zıplama vuruş ve sersemletmeden korur. Yeni altın yalnız altın ağacından çıkar. Kale içinde düşen altın yalnız kale sahibi ve takımına aittir.
 

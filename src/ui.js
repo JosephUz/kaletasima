@@ -1,5 +1,5 @@
 import { allied, nearStairs, roomAt, visibleTo } from './castle.js';
-import { DIFFICULTY_LABEL, RULES } from './config.js';
+import { DIFFICULTY_LABEL, RULES, TEAM_COLORS } from './config.js';
 import { $, escapeHtml } from './html.js';
 import { nearClubCrate } from './items.js';
 import { castleInvaded, countItems, dist, inside, targetScore } from './rules.js';
@@ -94,6 +94,31 @@ export function createUI(game) {
       (DIFFICULTY_LABEL[w.difficulty] || 'Normal');
     $('#match-clock').textContent =
       String(Math.floor(w.time / 60)).padStart(2, '0') + ':' + String(Math.floor(w.time % 60)).padStart(2, '0');
+    $('#team-card').hidden = w.mode === 'solo';
+    if (!$('#score-panel').hidden && w.mode !== 'solo') {
+      $('#team-target').textContent = 'HEDEF ' + targetScore(w);
+      $('#teams').innerHTML = [0, 1]
+        .map(t => {
+          const score = teamScore(t);
+          return (
+            '<div class="team-total"><div><b style="color:' +
+            TEAM_COLORS[t] +
+            '">' +
+            teamName(t) +
+            (t === p.team ? '<span>sen</span>' : '') +
+            '</b><strong>' +
+            score +
+            ' <small>/ ' +
+            targetScore(w) +
+            '</small></strong></div><div class="team-bar"><i style="width:' +
+            Math.min(100, (score / targetScore(w)) * 100) +
+            '%;background:' +
+            TEAM_COLORS[t] +
+            '"></i></div></div>'
+          );
+        })
+        .join('');
+    }
     if (!$('#score-panel').hidden)
       $('#players').innerHTML = [...w.players]
         .sort((a, b) => countItems(w, b.id) - countItems(w, a.id) || (b.gold || 0) - (a.gold || 0))

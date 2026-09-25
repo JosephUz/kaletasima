@@ -31,8 +31,8 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 
 ## Kurallar
 
-- Solo: kalende **10 eşya** biriktirip **60 saniye** koru. Co-op/PvP: **takım toplamı 20 eşya** ve 60 saniye.
-- Eşya sayısı hedefin (solo 10, takım 20) altına düşerse sayaç sıfırlanır. Kale kapıları hep açıktır ve hiç kilitlenmez; herkes her an başka kaleye girebilir. Kapıda bekleyen sahip içeri gireni sıkıştırır ama arkasını da kollamalıdır.
+- Solo: kalende **10 eşya** biriktirip **60 saniye** koru. Co-op/PvP: **takım toplamı 50 eşya** ve 60 saniye.
+- Eşya sayısı hedefin (solo 10, takım 50) altına düşerse sayaç sıfırlanır. Kale kapıları hep açıktır ve hiç kilitlenmez; herkes her an başka kaleye girebilir. Kapıda bekleyen sahip içeri gireni sıkıştırır ama arkasını da kollamalıdır.
 - Kale 21×24 birimdir ve 3 katlıdır; her kat tek büyük salondur (oda yok). Eşyayı kendi kalende istediğin katta istediğin yere bırakabilirsin; kale dışına bırakılan eşya puan sayılmaz. Salonda zıplama ve sopa dövüşü yapılabilir.
 - Kale içindeyken dışarısı (açık alan) görünür; kale içindeki eşyaları ve rakipleri yalnız aynı kattayken görürsün. Üst katlar saydamdır. Kamera ile karakter arasına giren kale dışarıdayken de saydamlaşır.
 - Mini harita yoktur. Sis ve görüş mesafesi sınırı yoktur; merkezden kaleler görünür. Sağ üstte eşya sıralaması, sağ altta kendi kale bilgisi kalır.

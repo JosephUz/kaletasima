@@ -341,9 +341,9 @@ test('10 eşya ve tam 60 saniye gerekir; eşya kaybı sayacı sıfırlar', () =>
   advance(w, 3);
   assert.equal(w.winner, 0);
 });
-test('takım toplamı 20 olduğunda tek takım kazanır', () => {
+test('takım toplamı 50 olduğunda tek takım kazanır', () => {
   const w = setup('coop');
-  for (let n = 0; n < 10; n++) addItem(w, 2);
+  for (let n = 0; n < 40; n++) addItem(w, 2);
   advance(w, 3602);
   assert.equal(w.winnerTeam, 0);
 });
@@ -470,7 +470,7 @@ test('gizli rakibin yalnız puanı ve altını herkese açıktır', () => {
   assert.equal(s.players[1].hidden, true);
   assert.equal(s.players[1].x, 0);
 });
-test('takımlı maç 20 eşya hedefini başlangıçta doldurmaz', () => {
+test('takımlı maç 50 eşya hedefini başlangıçta doldurmaz', () => {
   const w = setup('pvp');
   advance(w, 120);
   assert.equal(w.claimant, null);
