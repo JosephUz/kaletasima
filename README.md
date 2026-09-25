@@ -1,4 +1,4 @@
-# Kale Taşıma — 0.3
+# Kale Taşıma — 0.4
 
 Üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş.
 
@@ -62,7 +62,26 @@ Merdivenin yanında kat düğmeleri de görünür. Menüde grafik ve ses ayarı 
 
 ## Uygulama ve doğrulama
 
-`sim.js` kurallar ve botlar; `castle.js` döndürülmüş kale geometrisi, yollar ve görüş; `view.js` Three.js görüntüsü; `main.js` ekranlar ve girdi; `rooms.mjs` yetkili oda sunucusu; `net.js` istemci bağlantısı.
+Dosya düzeni Çayır Muhafızı ile aynıdır: kökte `index.html`, `style.css`, `game.js` (giriş noktası) ve `server.mjs`; sunucu odaları `server/`, oyun kodu `src/` altındadır. three.js npm paketinden (`node_modules/three/build`) `/vendor/` yolundan sunulur; sunucu bunlar dışında hiçbir dosyayı vermez.
+
+| Dosya | İçerik |
+| --- | --- |
+| `src/config.js` | Kurallar (`RULES`), kale ölçüleri (`CASTLE`), zorluklar, renkler, adlar |
+| `src/castle.js` | Kale geometrisi: yerel/dünya koordinatı, duvarlar ve çarpışma, görüş, merdiven, rota |
+| `src/rules.js` | Ortak yardımcılar: mesafe, kale içi, skor, kale alarmı, olay kuyruğu |
+| `src/items.js` | Eşya, altın, sopa kasaları, E ile al / bırak / sakla, satın alma, altın ağacı |
+| `src/combat.js` | Sopa (can), fırlatılan sopa (bayıltır), zıplama, bayılma ve kalede doğma |
+| `src/ai.js` | Botlar: hedef seçimi, hedef paylaşımı, yürüme, dövüş ve kaçınma |
+| `src/world.js` | Dünya kurulumu, oyuncu girdisi, simülasyon adımı (hareket, altın toplama, kazanma) |
+| `src/net/snapshot.js` | Sunucu paketleri: oyuncuya yalnız gördüğü durum, girdi sınırlama |
+| `src/net/client.js` | Tarayıcı bağlantısı, yeniden bağlanma |
+| `src/view/gameview.js` | Three.js sahnesi, omuz üstü kamera, çizim |
+| `src/view/models.js`, `effects.js` | Arena / kale / karakter / eşya modelleri; parçacık ve uçan yazılar |
+| `src/main.js` | İstemci uygulaması: tek başına ve çevrim içi döngü |
+| `src/input.js`, `ui.js`, `screens.js` | Girdi ve fare kilidi; oyun içi arayüz; menüler, lobi, maç karnesi |
+| `server/rooms.mjs` | Odalar ve lobi, 30 Hz otoriter simülasyon |
+
+Simülasyon (`world.js` ve bağımlıları) hem tarayıcıda (tek başına) hem sunucuda (çevrim içi) aynen koşar.
 
 Sunucu 30 Hz simülasyon, 15 Hz kişiye göre filtrelenmiş durum gönderir. Görüş dışındaki rakip konumları ve eşyalar gönderilmez. İstemci ara değerlerle hareketi yumuşatır. Görüş dışındaki kale modelleri çizilmez; geometri/malzeme paylaşımı, yeniden kullanılan nişan geometrisi, sınırlı piksel oranı, grafik ayarları ve düşük kare hızında otomatik kalite azaltma kullanılır.
 
@@ -74,7 +93,7 @@ node tests/browser-smoke.mjs
 
 Son iki test çalışan sunucu ister. Tarayıcı testi Chrome ve Playwright kullanır; `PLAYWRIGHT_MODULE` ile kurulu Playwright modülünün file URL'si verilebilir. Ağ testi 10 gerçek WebSocket istemcisi, koltuk doluluğu, yeniden bağlanma ve yetki devrini kontrol eder. Tarayıcı testi iki bağımsız oturumla modları ve oynanışı doğrular. Ekran görüntüleri `artifacts/` içine yazılır. Çok oyunculu internet gecikmesi ve insanlarla oyun dengesi bu yerel kontrollerin kapsamı dışındadır.
 
-Three.js MIT lisansı `vendor/THREE-LICENSE.txt` içindedir. Görseller ve sesler prosedürel üretilir.
+Three.js (MIT lisanslı) npm paketinden gelir: `node_modules/three/LICENSE`. Görseller ve sesler prosedürel üretilir.
 
 - Sıralama eşya sayısı ve eldeki altını gösterir. Görülen 30+ altınlı rakipler botların yağma hedefidir.
 - Sersemleme 10 saniyedir; süre bitince oyuncu kendi kalesinin zemin katında elinde sopayla ayılır, taşıdığı eşya vurulduğu yerde kalır. Ardından 2,5 saniye yeniden sersemleme koruması vardır. Sersemken sopa kullanılabilir ve başlamış savuruş iptal olmaz. Botlar sopadan kusursuz zıplamaz; dövüş kararları 220–400 ms aralıklıdır.
