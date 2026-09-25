@@ -1,5 +1,5 @@
 import {randomUUID,randomBytes} from 'node:crypto';
-import {createWorld,step,countItems,castleInvaded} from './sim.js';
+import {createWorld,step,countItems,castleInvaded,DIFFICULTIES} from './sim.js';
 import {visibleTo,allied} from './castle.js';
 
 const ACTIONS=['hit','throw','grab','buy','jump'];
@@ -15,7 +15,7 @@ export function sanitizeInput(raw={}){
 export function snapshotFor(w,id){
  const p=w.players[id];
  const players=w.players.map(v=>v.id===id||visibleTo(w,p,v)?{...v,goal:null}:({id:v.id,name:v.name,gold:v.gold,color:v.color,team:v.team,bot:v.bot,hidden:true,x:0,z:0,floor:0,y:0,vx:0,vz:0,angle:0,held:null,stats:w.winner!==null?v.stats:{}}));
- return {mode:w.mode,radius:w.radius,ring:w.ring,me:id,time:w.time,players,replicated:true,homeInvaded:castleInvaded(w,id),
+ return {mode:w.mode,difficulty:w.difficulty,radius:w.radius,ring:w.ring,me:id,time:w.time,players,replicated:true,homeInvaded:castleInvaded(w,id),
   bases:w.bases.map(b=>({...b,count:countItems(w,b.id)})),
   items:w.items.filter(i=>i.holder===id||visibleTo(w,p,i)),coins:w.coins.filter(i=>visibleTo(w,p,i)),shots:w.shots.filter(i=>i.owner===id||visibleTo(w,p,i)),
   claimant:w.claimant,claimTime:w.claimTime,winner:w.winner,winnerTeam:w.winnerTeam,
@@ -25,7 +25,7 @@ export function createRooms(){
  const rooms=new Map(),clients=new Map();
  const send=(c,m)=>{if(c?.ws?.readyState===1&&c.ws.bufferedAmount<256*1024)c.ws.send(JSON.stringify(m));};
  const error=(c,message)=>send(c,{type:'error',message});
- const lobby=r=>({type:'lobby',code:r.code,mode:r.mode,state:r.state,host:clients.get(r.host)?.id,seats:r.seats.map((token,i)=>{const c=clients.get(token);return{slot:i,team:i%2,name:c?.name||'Bot-'+(i+1),id:c?.id||null,online:!!c?.ws};})});
+ const lobby=r=>({type:'lobby',code:r.code,mode:r.mode,difficulty:r.difficulty,state:r.state,host:clients.get(r.host)?.id,seats:r.seats.map((token,i)=>{const c=clients.get(token);return{slot:i,team:i%2,name:c?.name||'Bot-'+(i+1),id:c?.id||null,online:!!c?.ws};})});
  const broadcast=r=>{for(const token of r.seats)send(clients.get(token),lobby(r));};
  // Çevrim içi sayısı: siteyi açan her sekme boşta bir bağlantı tutar (bkz. main.js). Değişince herkese, en çok 2 sn'de bir yayılır.
  const onlineCount=()=>{let n=0;for(const c of clients.values())if(c.ws)n++;return n;};
@@ -37,7 +37,7 @@ export function createRooms(){
   if(!r.seats.some(Boolean))rooms.delete(r.code);else broadcast(r);
  }
  function occupy(r,c,slot){if(r.seats[slot]||slot<0||slot>9||(r.mode==='coop'&&slot%2))return false;const old=r.seats.indexOf(c.token);if(old>=0)r.seats[old]=null;r.seats[slot]=c.token;c.slot=slot;c.room=r.code;if(r.world){Object.assign(r.world.players[slot],{bot:false,name:c.name});delete r.inputs[slot];}return true;}
- function begin(r){r.world=createWorld(71,{mode:r.mode});r.inputs={};r.state='playing';for(const p of r.world.players){const c=clients.get(r.seats[p.id]);p.bot=!c?.ws;if(c)p.name=c.name;}
+ function begin(r){r.world=createWorld(71,{mode:r.mode,difficulty:r.difficulty,humans:r.seats.map((t,i)=>clients.get(t)?.ws?i:-1).filter(i=>i>=0)});r.inputs={};r.state='playing';for(const p of r.world.players){const c=clients.get(r.seats[p.id]);p.bot=!c?.ws;if(c)p.name=c.name;}
   for(const t of r.seats){const c=clients.get(t);if(c?.ws)startClient(r,c);}broadcast(r);
  }
  const timer=setInterval(()=>{
@@ -65,7 +65,7 @@ export function createRooms(){
    if(m.type==='leave'){leave(c);send(c,{type:'left'});return;}
    if((m.type==='create'||m.type==='join')&&typeof m.name==='string'&&m.name.trim())c.name=m.name.trim().slice(0,16);
    if(m.type==='create'){
-    if(rooms.size>=32)return error(c,'Oda sınırına ulaşıldı.');leave(c);const code=randomBytes(3).toString('hex').toUpperCase();const r={code,mode:m.mode==='coop'?'coop':'pvp',host:c.token,seats:Array(10).fill(null),state:'lobby',world:null,inputs:{},tick:0};rooms.set(code,r);occupy(r,c,0);broadcast(r);return;
+    if(rooms.size>=32)return error(c,'Oda sınırına ulaşıldı.');leave(c);const code=randomBytes(3).toString('hex').toUpperCase();const r={code,mode:m.mode==='coop'?'coop':'pvp',difficulty:DIFFICULTIES.includes(m.difficulty)?m.difficulty:'normal',host:c.token,seats:Array(10).fill(null),state:'lobby',world:null,inputs:{},tick:0};rooms.set(code,r);occupy(r,c,0);broadcast(r);return;
    }
    if(m.type==='join'){
     const r=rooms.get(String(m.code||'').toUpperCase());if(!r)return error(c,'Oda bulunamadı.');if(c.room===r.code){broadcast(r);return;}

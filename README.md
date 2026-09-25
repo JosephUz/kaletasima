@@ -21,6 +21,11 @@ Konteyner adı `kale-tasima`; otomatik yeniden başlatma ve `/health` sağlık k
 - **PvP:** 5 maviye karşı 5 kırmızı. İki takımın boş koltuklarına da oturulur. Kaça kaç seçimi yoktur.
 - On kişilik modlarda daha geniş bir çember vardır; mavi ve kırmızı kaleler dönüşümlü dizilir. Bütün kapılar merkeze bakar.
 
+**Bot zorluğu** giriş ekranında seçilir (Kolay / Normal / Zor, varsayılan Normal; tarayıcı hatırlar). Çevrim içi odada oda kuranın seçimi geçerlidir ve lobide görünür.
+
+- Kolay ve Normal: botlar eşyalarını (başlangıç, satın alınan, taşınan) hep 1. kata koyar.
+- Zor: botlar eşyalarını üç kata dağıtır; botun altın ağacı vuruşu 2 yerine 4 altın düşürür (oyuncular için 2).
+
 Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç devam ederken boş koltuğa katılmak da mümkündür. Kopan oyuncuyu bot devralır; 60 saniye içinde aynı sekmeden yeniden bağlanırsa koltuğuna döner. Oda sahibi ayrılırsa yetki diğer bağlı oyuncuya geçer. Maç sonunda sahibi yeni maç için lobiye dönebilir.
 
 ## Kurallar

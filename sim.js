@@ -1,7 +1,10 @@
 import {CASTLE,worldPoint,localPoint,allied,castleAt,roomAt,roomPoint,visibleTo,collide,clearSight,useStairs,route} from './castle.js';
-export const RULES = Object.freeze({radius:59,baseRadius:12,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,maxStun:30,stunExtend:1,hp:3,target:10,teamTarget:20,winHold:60,price:15,stunGold:5,meleeReach:2.7,throwRange:24,throwSpeed:22});
+export const RULES = Object.freeze({radius:59,baseRadius:12,speed:6.6,carrySpeed:5.3,sprint:1.23,accel:19,pushDrag:8,stun:10,maxStun:30,stunExtend:1,hp:3,target:10,teamTarget:20,winHold:60,price:15,stunGold:5,treeGold:2,hardBotTreeGold:4,meleeReach:2.7,throwRange:24,throwSpeed:22});
 export const targetScore=w=>w.mode==='solo'?RULES.target:RULES.teamTarget;
 export const COLORS=['#56b9c6','#e98b68','#b29be3','#e5bd5c','#86ba73','#62c9be','#ec9e74','#7eaad7','#ce82a0','#b6bf6e'];
+// Zorluk: kolay / normal'de botlar eşyalarını hep 1. kata (zemin) koyar; zor'da üç kata dağıtır ve ağaçtan daha çok altın düşürür.
+export const DIFFICULTIES=['easy','normal','hard'];
+export const botGroundFloor=(w,id)=>!!w.players[id]?.bot&&w.difficulty!=='hard';
 export const NAMES=Array.from({length:10},(_,i)=>'Bot-'+(i+1));
 const TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -10,12 +13,12 @@ export function inside(p,b,margin=0){const q=localPoint(b,p);return Math.abs(q.x
 export function castleInvaded(w,id){if(w.replicated)return id===w.me&&w.homeInvaded===true;return w.players.some(v=>!allied(w,id,v.id)&&!(v.stun>0)&&inside(v,w.bases[id]));}
 export function angleDelta(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a));}
 export function createWorld(seed=71,options={}){
- const mode=options.mode||'solo',count=mode==='solo'?5:10;
- const w={mode,radius:count===5?74:100,ring:count===5?54:80,me:0,time:0,seed,players:[],bases:[],items:[],coins:[],shots:[],events:[],winner:null,nextId:1,treeReady:0,claimant:null,claimTime:0};
+ const mode=options.mode||'solo',count=mode==='solo'?5:10,humans=options.humans||[0];
+ const w={mode,difficulty:DIFFICULTIES.includes(options.difficulty)?options.difficulty:'normal',radius:count===5?74:100,ring:count===5?54:80,me:0,time:0,seed,players:[],bases:[],items:[],coins:[],shots:[],events:[],winner:null,nextId:1,treeReady:0,claimant:null,claimTime:0};
  w.random=()=>{w.seed=(w.seed*1664525+1013904223)>>>0;return w.seed/4294967296;};
  for(let i=0;i<count;i++){const a=i*TAU/count,x=Math.sin(a)*w.ring,z=Math.cos(a)*w.ring;
   w.bases.push({id:i,x,z,angle:a,r:RULES.baseRadius});
-  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,hp:RULES.hp,airJumps:0,stun:0,stunTotal:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,climb:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:i!==0,botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,knockouts:0,stuns:0,steals:0,deposits:0,purchases:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
+  w.players.push({id:i,team:mode==='solo'?i:i%2,name:options.names?.[i]||NAMES[i],color:mode==='solo'?COLORS[i]:(i%2?'#e98b68':'#56b9c6'),x,z,floor:0,y:0,vy:0,vx:0,vz:0,px:0,pz:0,angle:a+Math.PI,gold:12,hp:RULES.hp,airJumps:0,stun:0,stunTotal:0,immune:0,hurt:0,attack:0,attackDone:false,attackCd:0,hasClub:true,shot:null,held:null,climb:null,inv:0,moveX:0,moveZ:0,aimX:x,aimZ:z-1,sprint:false,bot:!humans.includes(i),botThink:.2+i*.17,goal:null,personality:i,stats:{hits:0,knockouts:0,stuns:0,steals:0,deposits:0,purchases:0,treeHits:0,jumps:0,dodges:0,goldCollected:0,distance:0}});
   addItem(w,i,i%5);addItem(w,i,(i+2)%5);
  }
  for(let i=0;i<5;i++){const a=i*TAU/5;addItem(w,null,i,Math.sin(a)*4.1,Math.cos(a)*4.1);}
@@ -23,7 +26,7 @@ export function createWorld(seed=71,options={}){
 }
 function emit(w,type,extra={}){w.events.push({type,time:w.time,...extra});}
 export function countItems(w,id){if(w.replicated)return w.bases[id]?.count||0;return w.items.filter(i=>i.base===id&&i.holder===null).length;}
-function slotPosition(w,baseId,exclude=null){const b=w.bases[baseId],used=w.items.filter(i=>i.base===baseId&&i.id!==exclude).map(i=>i.slot);let slot=0;while(used.includes(slot))slot++;return {...roomPoint(b,slot%8,slot%3),slot};}
+function slotPosition(w,baseId,exclude=null){const b=w.bases[baseId],used=w.items.filter(i=>i.base===baseId&&i.id!==exclude).map(i=>i.slot);let slot=0;while(used.includes(slot))slot++;return {...roomPoint(b,slot%8,botGroundFloor(w,baseId)?0:slot%3),slot};}
 export function addItem(w,base=null,kind=0,x=0,z=0){const place=base===null?{x,z,floor:0,slot:-1}:slotPosition(w,base);const item={id:w.nextId++,kind,base,holder:null,...place};w.items.push(item);return item;}
 export function addCoin(w,x,z,value=1,excluded=-1){const c={id:w.nextId++,x,z,value,age:0,floor:0,excluded,vx:(w.random()-.5)*5,vz:(w.random()-.5)*5};w.coins.push(c);return c;}
 export function dropHeld(w,p){if(p.held===null)return;const i=w.items.find(i=>i.id===p.held);i.holder=null;i.base=null;i.x=p.x;i.z=p.z;i.floor=p.floor||0;p.held=null;emit(w,'drop',{player:p.id,item:i.id});}
@@ -91,7 +94,7 @@ function stunPlayer(w,p,v){
 export function harvestTree(w,p){
  const d=Math.hypot(p.x,p.z);if(!p.hasClub||p.floor!==0||d>3.4||p.stun>0||w.time<w.treeReady||w.coins.length>=80)return false;
  if((-p.x*Math.sin(p.angle)-p.z*Math.cos(p.angle))/Math.max(.01,d)<.15)return false;
- w.treeReady=w.time+.22;p.stats.treeHits++;for(let n=0;n<2;n++){const a=w.random()*Math.PI*2;addCoin(w,Math.sin(a)*1.9,Math.cos(a)*1.9);}
+ w.treeReady=w.time+.22;p.stats.treeHits++;const n=p.bot&&w.difficulty==='hard'?RULES.hardBotTreeGold:RULES.treeGold;for(let k=0;k<n;k++){const a=w.random()*Math.PI*2;addCoin(w,Math.sin(a)*1.9,Math.cos(a)*1.9);}
  emit(w,'treehit',{player:p.id,x:0,z:0});return true;
 }
 export function respawn(w,p){
@@ -133,7 +136,7 @@ function updateBot(w,p,dt){
  if(p.stun>0||p.climb){p.moveX=p.moveZ=0;return;}
  p.botThink-=dt;if(p.botThink<=0||!p.goal){p.goal=chooseGoal(w,p);p.botThink=.35+w.random()*.25;}
  const g=p.goal,own=w.bases[p.id];let target=null;
- if(g.type==='home'||g.type==='buy'){target=roomPoint(own,p.id%4,p.id%3);if(dist(p,target)<.8&&(p.floor||0)===target.floor){if(p.held!==null)interact(w,p.id);if(p.gold>=RULES.price)buy(w,p.id);p.goal=null;}}
+ if(g.type==='home'||g.type==='buy'){target=roomPoint(own,p.id%4,botGroundFloor(w,p.id)?0:p.id%3);if(dist(p,target)<.8&&(p.floor||0)===target.floor){if(p.held!==null)interact(w,p.id);if(p.gold>=RULES.price)buy(w,p.id);p.goal=null;}}
  if(g.type==='rearm'){target=nearestClubCrate(w,p);if(nearClubCrate(w,p)){interact(w,p.id);p.goal=null;}}
  if(g.type==='tree'){const a=p.id*Math.PI*2/w.players.length;target={x:Math.sin(a)*2.65,z:Math.cos(a)*2.65,floor:0};if(dist(p,{x:0,z:0})<3.3)melee(w,p.id,{x:0,z:0});}
  if(g.type==='search'){const b=w.bases[g.base];target=roomPoint(b,g.room,g.floor);if(dist(p,target)<.7&&(p.floor||0)===g.floor){g.room++;if(g.room>=4){g.room=0;g.floor=(g.floor+1)%3;}p.botThink=0;}}
