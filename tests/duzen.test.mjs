@@ -1,6 +1,7 @@
 // Düzen testi: yatay telefon taklidinde oyun ekranı sayfayı yatayda kaydırmamalı. Gece testi 2026-09-28'de
 // üstteki başlık şeridinin arkasındaki gölge (`.top::before`) ekranın 11px dışına taştığı için sayfa kayıyordu.
-// Depo tarayıcısız da denenebilsin diye Playwright yoksa test atlanır (PLAYWRIGHT_MODULE ile yol verilebilir).
+// Diğer tarayıcı testleri gibi Playwright ve Chrome ister (bkz. README). Depo tarayıcısız da denenebilsin diye
+// Playwright yoksa test atlanır; başka yerdeki kurulum PLAYWRIGHT_MODULE ile verilebilir.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -9,7 +10,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const kok = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PW = process.env.PLAYWRIGHT_MODULE || 'C:/ju/sonplaka/node_modules/playwright';
+const PW = process.env.PLAYWRIGHT_MODULE || 'playwright';
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
 const pwYukle = async () => {
   try {
@@ -18,6 +20,9 @@ const pwYukle = async () => {
     return null;
   }
 };
+
+/** Diğer duman testleri gibi kurulu Chrome'u kullanır; yoksa Playwright'ın kendi tarayıcısına düşer. */
+const tarayiciAyari = () => (fs.existsSync(CHROME) ? { executablePath: CHROME } : {});
 
 const TIPLER = {
   '.html': 'text/html; charset=utf-8',
@@ -59,11 +64,15 @@ function sunucuAc() {
 
 const pw = await pwYukle();
 
-test('yatay telefonda oyun ekranı sayfayı yatayda kaydırmaz', { skip: pw ? false : 'Playwright yok' }, async () => {
+const atla = pw ? false : 'Playwright yok (npm i -D playwright ya da PLAYWRIGHT_MODULE ile yol ver)';
+
+test('yatay telefonda oyun ekranı sayfayı yatayda kaydırmaz', { skip: atla }, async () => {
   const { chromium, devices } = pw;
   const { server, adres } = await sunucuAc();
-  const browser = await chromium.launch();
+  // Tarayıcı açılışı da temizleme kapsamında: başlatma başarısız olursa sunucu kapanmadan test asılı kalırdı.
+  let browser = null;
   try {
+    browser = await chromium.launch(tarayiciAyari());
     for (const ad of ['Pixel 7 landscape', 'iPhone 13 landscape']) {
       const { defaultBrowserType, ...cihaz } = devices[ad];
       const ctx = await browser.newContext(cihaz);
@@ -81,7 +90,8 @@ test('yatay telefonda oyun ekranı sayfayı yatayda kaydırmaz', { skip: pw ? fa
       );
     }
   } finally {
-    await browser.close();
+    await browser?.close();
+    server.closeAllConnections?.();
     server.close();
   }
 });

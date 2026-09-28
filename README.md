@@ -100,7 +100,7 @@ node tests/network-smoke.mjs
 node tests/browser-smoke.mjs
 ```
 
-Son iki test çalışan sunucu ister. Tarayıcı testi Chrome ve Playwright kullanır; `PLAYWRIGHT_MODULE` ile kurulu Playwright modülünün file URL'si verilebilir. Ağ testi 10 gerçek WebSocket istemcisi, koltuk doluluğu, yeniden bağlanma ve yetki devrini kontrol eder. Tarayıcı testi iki bağımsız oturumla modları ve oynanışı doğrular. Ekran görüntüleri `artifacts/` içine yazılır. Çok oyunculu internet gecikmesi ve insanlarla oyun dengesi bu yerel kontrollerin kapsamı dışındadır.
+Son iki test çalışan sunucu ister. Tarayıcı testi Chrome ve Playwright kullanır; `PLAYWRIGHT_MODULE` ile kurulu Playwright modülünün file URL'si verilebilir. Playwright depoya bağımlılık olarak eklenmez, isteğe bağlıdır: `npm i -D playwright` ile kurulur ya da başka bir yerdeki kurulum `PLAYWRIGHT_MODULE` ile gösterilir. `npm test` içindeki düzen testi (`tests/duzen.test.mjs`) da aynı yolu kullanır; kendi sunucusunu açtığı için ayrıca sunucu istemez, Playwright bulunamazsa sessizce atlanır. Ağ testi 10 gerçek WebSocket istemcisi, koltuk doluluğu, yeniden bağlanma ve yetki devrini kontrol eder. Tarayıcı testi iki bağımsız oturumla modları ve oynanışı doğrular. Ekran görüntüleri `artifacts/` içine yazılır. Çok oyunculu internet gecikmesi ve insanlarla oyun dengesi bu yerel kontrollerin kapsamı dışındadır.
 
 Three.js (MIT lisanslı) npm paketinden gelir: `node_modules/three/LICENSE`. Görseller ve sesler prosedürel üretilir.
 
