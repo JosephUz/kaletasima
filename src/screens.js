@@ -1,5 +1,6 @@
 import { DIFFICULTIES, DIFFICULTY_LABEL } from './config.js';
 import { $, escapeHtml } from './html.js';
+import { paylasti } from './olcum.js';
 import { onlineEnabled } from './platform.js';
 import { countItems } from './rules.js';
 
@@ -178,6 +179,7 @@ export function createScreens(game, ui, input, actions) {
   $('#lobby-leave').onclick = actions.goHome;
   $('#copy-room').onclick = async () => {
     const url = location.origin + '/?oda=' + game.net.room.code;
+    paylasti(); // ölçüm: lobi linki paylaşıldı
     try {
       await navigator.clipboard.writeText(url);
       $('#lobby-status').textContent = 'Katılma linki kopyalandı.';

@@ -3,6 +3,7 @@ import { createInput } from './input.js';
 import { buy, interact } from './items.js';
 import { melee, throwClub } from './combat.js';
 import { Network } from './net/client.js';
+import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
 import { createScreens } from './screens.js';
@@ -95,12 +96,15 @@ export function start() {
     game.view.resize();
   }
   function launch(w, network = false) {
+    // Ölçüm: gerçek maç başlangıcı. Çevrimiçi 'start' yeniden bağlanınca da gelir (aynı maç sürüyor); o zaman sayılmaz.
+    const yeniMac = !network || !(game.started && game.online);
     game.online = network;
     latest = network ? w : null;
     snapshotAt = performance.now();
     build(w);
     game.started = true;
     acc = 0;
+    if (yeniMac) macBasladi(); // ölçüm: çevrimdışı her başlatma, çevrimiçi ilk 'start' (rematch lobiden geçer, yine sayılır)
     screens.show(null);
     input.clear();
     ui.update();
@@ -149,7 +153,10 @@ export function start() {
         if (e.type === 'deposit') ui.toast('Eşya kalende saklandı.');
       }
     }
-    if (w.winner !== null && game.screen !== 'results') screens.result();
+    if (w.winner !== null && game.screen !== 'results') {
+      screens.result();
+      if (game.started) macBitti(); // ölçüm: maç bitti (çevrimdışı kazanan belirlenince, çevrimiçi kazananlı ilk paket)
+    }
   }
   /** Sunucu paketi: aynı kattaki görünen oyuncuların çizim konumu korunur (ara değer ondan hedefe yürür). */
   function receive(w) {
@@ -248,6 +255,7 @@ export function start() {
       if (game.online) onlineFrame(dt);
       else if (!game.screen) soloFrame(dt);
     }
+    if (game.started) macKontrol(); // ölçüm: oyuncu 60 sn oynayınca bir kez "bir_dakika" (bayrak dolunca anında döner)
     ui.tickToast(dt);
     const playing = game.started && !game.screen;
     input.sync(playing && ui.nearest());
