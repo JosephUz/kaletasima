@@ -202,9 +202,14 @@ export function createScreens(game, ui, input, actions) {
     game.view.setQuality(game.quality);
     ui.update();
   };
+  const soundText = () => ($('#sound').textContent = 'Ses: ' + (game.sound ? 'Açık' : 'Kapalı'));
+  soundText();
   $('#sound').onclick = () => {
     game.sound = !game.sound;
-    $('#sound').textContent = 'Ses: ' + (game.sound ? 'Açık' : 'Kapalı');
+    soundText();
+    try {
+      localStorage.setItem('kale.sound', game.sound ? 'on' : 'off');
+    } catch {}
   };
   $('#score-toggle').onclick = () => ($('#score-panel').hidden = !$('#score-panel').hidden);
   $('#buy').onclick = () => {

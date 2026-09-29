@@ -43,6 +43,10 @@ export function start() {
     quality: 1,
     sound: true,
   };
+  // Ses ayarı tarayıcıda kalır (menüdeki Ses düğmesi).
+  try {
+    game.sound = localStorage.getItem('kale.sound') !== 'off';
+  } catch {}
   let acc = 0,
     uiTimer = 0,
     netTimer = 0,

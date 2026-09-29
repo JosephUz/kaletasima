@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 await mkdir('artifacts', { recursive: true });
 const browser = await chromium.launch({
-  executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}),
   headless: true,
-  args: ['--disable-gpu-sandbox'],
+  args: ['--disable-gpu-sandbox', ...(process.env.SWIFTSHADER ? ['--use-gl=angle', '--use-angle=swiftshader'] : ['--use-gl=angle', '--use-angle=d3d11', '--ignore-gpu-blocklist'])],
 });
 try {
   const context = await browser.newContext({ viewport: { width: 1536, height: 960 } }),
@@ -85,11 +85,9 @@ try {
   await page.waitForTimeout(200);
   assert.ok(await page.locator('#stairs').isVisible());
   await page.keyboard.press('Digit3');
-  await page.waitForTimeout(1100);
-  assert.equal(await page.evaluate(() => window.__kaleTasima.world().players[0].floor), 2);
+  await page.waitForFunction(() => window.__kaleTasima.world().players[0].floor === 2, null, { timeout: 5000 });
   await page.keyboard.press('Digit1');
-  await page.waitForTimeout(1100);
-  assert.equal(await page.evaluate(() => window.__kaleTasima.world().players[0].floor), 0);
+  await page.waitForFunction(() => window.__kaleTasima.world().players[0].floor === 0, null, { timeout: 5000 });
   await page.screenshot({ path: 'artifacts/02-stairs.png' });
   await page.evaluate(() => {
     const w = window.__kaleTasima.world(),
