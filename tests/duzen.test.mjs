@@ -1,6 +1,6 @@
 // Düzen testi: yatay telefon taklidinde oyun ekranı sayfayı yatayda kaydırmamalı. Gece testi 2026-09-28'de
 // üstteki başlık şeridinin arkasındaki gölge (`.top::before`) ekranın 11px dışına taştığı için sayfa kayıyordu.
-// Diğer tarayıcı testleri gibi Playwright ve Chrome ister (bkz. README). Depo tarayıcısız da denenebilsin diye
+// Playwright ister (bkz. README); kurulu Chrome değil, başsız kabuk kullanılır. Depo tarayıcısız da denenebilsin diye
 // Playwright yoksa test atlanır; başka yerdeki kurulum PLAYWRIGHT_MODULE ile verilebilir.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const kok = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PW = process.env.PLAYWRIGHT_MODULE || 'playwright';
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+
 
 const pwYukle = async () => {
   try {
@@ -21,8 +21,23 @@ const pwYukle = async () => {
   }
 };
 
-/** Diğer duman testleri gibi kurulu Chrome'u kullanır; yoksa Playwright'ın kendi tarayıcısına düşer. */
-const tarayiciAyari = () => (fs.existsSync(CHROME) ? { executablePath: CHROME } : {});
+/**
+ * Kurulu Chrome kullanılmaz: başsız Chrome'da fare kilidi (pointer lock) Windows'ta gerçek imleci görünmeyen pencereye
+ * hapseder, kullanıcının faresi sol üste sıkışır (2026-09-30'da GetClipCursor ile ölçüldü). Playwright'ın başsız
+ * kabuğu (chrome-headless-shell) pencere açmaz, imlece dokunmaz. CHROME_PATH verilmişse o, yoksa ms-playwright
+ * altındaki en yeni kabuk, o da yoksa Playwright'ın varsayılanı.
+ */
+const basizKabuk = () => {
+  const klasor = path.join(process.env.LOCALAPPDATA || '', 'ms-playwright');
+  if (!fs.existsSync(klasor)) return null;
+  const surum = fs.readdirSync(klasor).filter(d => d.startsWith('chromium_headless_shell-')).sort().pop();
+  const exe = surum && path.join(klasor, surum, 'chrome-headless-shell-win64', 'chrome-headless-shell.exe');
+  return exe && fs.existsSync(exe) ? exe : null;
+};
+const tarayiciAyari = () => {
+  const exe = process.env.CHROME_PATH || basizKabuk();
+  return exe ? { executablePath: exe, headless: true } : { headless: true };
+};
 
 const TIPLER = {
   '.html': 'text/html; charset=utf-8',
