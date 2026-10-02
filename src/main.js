@@ -1,3 +1,4 @@
+import { gorunurAlanaKilitle } from './gorunur-alan.js';
 import { $ } from './html.js';
 import { createInput } from './input.js';
 import { buy, interact } from './items.js';
@@ -26,6 +27,10 @@ export function start() {
   const touch = touchDevice(),
     networked = onlineEnabled();
   document.body.classList.toggle('touch', touch);
+  // Telefonda oyun kökünü (body) tarayıcı çubuklarının bıraktığı görünür alana kilitler: üst çubuk, giriş ekranının
+  // üst şeridi ve lobideki oda kodu adres çubuğunun altında kalmaz (bkz. src/gorunur-alan.js, style.css → `html.vv`).
+  // Sahneden önce: tuval ilk ölçüsünü kilitlenmiş kökten alsın.
+  const gorunurAlan = gorunurAlanaKilitle(window);
   if (touch) {
     // Telefonda skor tablosu kapalı başlar (Skor düğmesi açar), düğme yazılarında klavye kısayolu yok.
     $('#score-panel').hidden = true;
@@ -76,6 +81,9 @@ export function start() {
   };
   const toggleCamera = () => setCamera(game.camera === 'iso' ? 'third' : 'iso');
   $('#cam-toggle').onclick = toggleCamera;
+
+  // Tam ekrana girip çıkınca (maç başı `enterFullscreen`, Esc) görünür alan değişir; tarayıcı değişimi geç bildirir.
+  document.addEventListener('fullscreenchange', () => gorunurAlan.guncelle());
   document.body.classList.toggle('iso', game.camera === 'iso');
   game.view.setMode(game.camera);
 
