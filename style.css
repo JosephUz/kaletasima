@@ -59,11 +59,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;font-size:12
 
 /* Dokunmatik kip (telefon / tablet, ?touch): sol yarı joystick, sağ yarı bakış, sağ altta başparmak düğmeleri. */
 .touch-only{display:none}body.touch .touch-only{display:block}
-/* Tam ekran düğmeleri yalnız dokunmatikte görünür (masaüstünde F11 var): adres çubuğunu ve alt çubuğu tümden
-   kaldırmanın en hızlı yolu, bu yüzden belirgin (sarı). Girişteki düğme oda kurulmadan önce basılsın diye üst
-   şeritte durur. Uygulamada (Play Store) tarayıcı çubuğu yok: main.js ikisini de gizler. */
-body.touch .full-btn{background:#edc879e8;color:#243c30;border-color:#f9d997;font-weight:700}
-.full-btn[hidden]{display:none!important}body.touch .desktop-only,body.touch .compact-controls,body.touch kbd,body.touch #help{display:none!important}
+body.touch .desktop-only,body.touch .compact-controls,body.touch kbd,body.touch #help{display:none!important}
 body.touch #scene{cursor:default}
 #touch{position:absolute;inset:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .touch-zone{position:absolute;top:0;bottom:0;z-index:2;touch-action:none}.touch-zone.left{left:0;width:44%}.touch-zone.right{left:44%;right:0}

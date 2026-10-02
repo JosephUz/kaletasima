@@ -8,7 +8,7 @@ import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
 import { createScreens } from './screens.js';
-import { enterFullscreen, fullscreenOn, toggleFullscreen, touchDevice } from './touch.js';
+import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { GameView } from './view/gameview.js';
 import { createWorld, step } from './world.js';
@@ -82,33 +82,8 @@ export function start() {
   const toggleCamera = () => setCamera(game.camera === 'iso' ? 'third' : 'iso');
   $('#cam-toggle').onclick = toggleCamera;
 
-  // Tam ekran: telefonda adres çubuğunun üstü yemesine karşı en kesin çare, bu yüzden hem giriş ekranının üst
-  // şeridinde hem oyun içindeki üst çubukta durur; ikisi de açık / kapalıyı birlikte gösterir. Play Store
-  // uygulamasında tarayıcı çubuğu zaten yok: düğmeler hiç görünmez.
-  const fullBtns = [$('#full-toggle'), $('#home-full')];
-  if (isApp() || !touch) for (const b of fullBtns) b.hidden = true;
-  else {
-    const syncFull = () => {
-      const on = fullscreenOn();
-      for (const b of fullBtns) b.setAttribute('aria-label', on ? 'Tam ekrandan çık' : 'Tam ekran');
-      fullBtns[0].textContent = on ? '⤡' : '⛶';
-      fullBtns[1].textContent = on ? '⤡ Tam ekrandan çık' : '⛶ Tam ekran';
-    };
-    for (const b of fullBtns)
-      b.onclick = () => {
-        toggleFullscreen();
-        // Çubuklar kaybolduktan sonra görünür alan değişir; tarayıcı değişimi geç bildirir, bir de biz okuyalım.
-        setTimeout(() => {
-          syncFull();
-          gorunurAlan.guncelle();
-        }, 120);
-      };
-    document.addEventListener('fullscreenchange', () => {
-      syncFull();
-      gorunurAlan.guncelle();
-    });
-    syncFull();
-  }
+  // Tam ekrana girip çıkınca (maç başı `enterFullscreen`, Esc) görünür alan değişir; tarayıcı değişimi geç bildirir.
+  document.addEventListener('fullscreenchange', () => gorunurAlan.guncelle());
   document.body.classList.toggle('iso', game.camera === 'iso');
   game.view.setMode(game.camera);
 

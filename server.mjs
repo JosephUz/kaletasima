@@ -19,11 +19,8 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.webmanifest': 'application/manifest+json; charset=utf-8',
-  '.svg': 'image/svg+xml',
 };
-/** manifest.webmanifest ve icon.svg: ana ekrana eklenince oyun tam ekran açılır (bkz. index.html). */
-const rootFiles = ['index.html', 'style.css', 'game.js', 'manifest.webmanifest', 'icon.svg'];
+const rootFiles = ['index.html', 'style.css', 'game.js'];
 /** Oyun dosyaları önbelleğe alınmaz: tek bir sürüm vardır ve güncelleme anında geçmelidir. */
 const noStore = 'no-store, no-cache, must-revalidate, max-age=0';
 
