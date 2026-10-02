@@ -1,0 +1,17 @@
+{
+  "name": "Kale Taşıma · Orman Kaleleri",
+  "short_name": "Kale Taşıma",
+  "lang": "tr",
+  "description": "Ağaçtan altın düşür, odaları dolaş, hazineyi kalene taşı; sopanı hazır tut.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#273d3c",
+  "theme_color": "#273d3c",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

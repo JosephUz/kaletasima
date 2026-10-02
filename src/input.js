@@ -85,8 +85,10 @@ export function createInput(game, canvas, hooks) {
         ? { x: best.x, z: best.z }
         : { x: p.x + Math.sin(p.angle) * ISO.aimAhead, z: p.z + Math.cos(p.angle) * ISO.aimAhead };
     }
+    // Artı işareti tuvalin ortasındadır; telefonda tuval pencereden kısa olabilir (bkz. view.olcu()).
+    const { w, h } = view.olcu();
     return (
-      view.aimFromScreen(innerWidth / 2, innerHeight / 2) || {
+      view.aimFromScreen(w / 2, h / 2) || {
         x: p.x + Math.sin(view.yaw) * 12,
         z: p.z + Math.cos(view.yaw) * 12,
       }
@@ -214,7 +216,12 @@ export function createInput(game, canvas, hooks) {
       if (game.started && !game.screen) hooks.pause();
     }
   });
-  window.addEventListener('resize', () => game.view.resize());
+  // Çizim alanı yalnız pencere boyuyla değil, telefonda tarayıcı çubuklarının bıraktığı görünür alanla da değişir:
+  // `visualViewport` olayları (adres çubuğu açılıp kapanırken pencere boyu aynı kalabilir) de yenilemeli.
+  const yenidenOlc = () => game.view.resize();
+  window.addEventListener('resize', yenidenOlc);
+  visualViewport?.addEventListener('resize', yenidenOlc);
+  visualViewport?.addEventListener('scroll', yenidenOlc);
 
   /** Dokunmatik düğmeler yalnız maç sırasında görünür; TAŞI yakında alınacak eşya varken parlar. */
   function sync(near) {

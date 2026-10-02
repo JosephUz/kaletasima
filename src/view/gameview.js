@@ -164,17 +164,29 @@ export class GameView {
     this.focus.set(p.x, (p.floor || 0) * CASTLE.height, p.z);
     this.shake = 0;
   }
+  /** Nişan: **tuvale göre** piksel koordinatı (pencereye göre değil; bkz. olcu()). */
   aimFromScreen(x, y) {
-    this.ndc.set((x / innerWidth) * 2 - 1, 1 - (y / innerHeight) * 2);
+    const { w, h } = this.olcu();
+    this.ndc.set((x / w) * 2 - 1, 1 - (y / h) * 2);
     this.ray.setFromCamera(this.ndc, this.camera);
     if (this.ray.ray.intersectPlane(this.plane, this.hit)) return { x: this.hit.x, z: this.hit.z };
     return null;
   }
+  /**
+   * Çizim alanının ölçüsü. Pencere değil **tuval** ölçülür: telefonda oyun kökü tarayıcı çubuklarının bıraktığı
+   * görünür alana kilitlenir (bkz. src/gorunur-alan.js), o zaman tuval pencereden kısadır. Etiketler de tuvalle
+   * aynı kutudadır (#world-labels), bu yüzden izdüşüm doğrudan bu ölçüye göre hesaplanır.
+   */
+  olcu() {
+    const c = this.canvas;
+    return { w: c.clientWidth || innerWidth, h: c.clientHeight || innerHeight };
+  }
   project(x, y, z) {
+    const { w, h } = this.olcu();
     this.projected.set(x, y, z).project(this.camera);
     return {
-      x: (this.projected.x * 0.5 + 0.5) * innerWidth,
-      y: (-0.5 * this.projected.y + 0.5) * innerHeight,
+      x: (this.projected.x * 0.5 + 0.5) * w,
+      y: (-0.5 * this.projected.y + 0.5) * h,
       z: this.projected.z,
     };
   }
@@ -186,8 +198,10 @@ export class GameView {
     this.resize();
   }
   resize() {
-    const a = innerWidth / innerHeight;
-    this.renderer.setSize(innerWidth, innerHeight);
+    const { w, h } = this.olcu(),
+      a = w / h;
+    // updateStyle=false: tuvalin boyunu CSS verir (%100 × %100 kök), renderer yalnız çizim arabelleğini ayarlar.
+    this.renderer.setSize(w, h, false);
     this.third.aspect = a;
     this.third.updateProjectionMatrix();
     Object.assign(this.iso, { left: -ISO.half * a, right: ISO.half * a, top: ISO.half, bottom: -ISO.half });
@@ -436,6 +450,7 @@ export class GameView {
   }
   /** Dünya etiketlerini ekrana yansıtır; ekran dışı ya da üst / alt şerit altındakiler gizlenir. */
   syncLabels() {
+    const { w: genislik, h: yukseklik } = this.olcu();
     for (const l of this.labels) {
       l.object.getWorldPosition(this.projected);
       const q = this.project(this.projected.x, this.projected.y + l.height, this.projected.z);
@@ -445,9 +460,9 @@ export class GameView {
         q.z > 1 ||
         q.z < -1 ||
         q.x < 0 ||
-        q.x > innerWidth ||
+        q.x > genislik ||
         q.y < 75 ||
-        q.y > innerHeight - 80;
+        q.y > yukseklik - 80;
       if (!l.el.hidden) {
         l.el.style.left = q.x + 'px';
         l.el.style.top = q.y + 'px';

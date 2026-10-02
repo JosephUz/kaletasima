@@ -1,3 +1,4 @@
+import { gorunurAlanaKilitle } from './gorunur-alan.js';
 import { $ } from './html.js';
 import { createInput } from './input.js';
 import { buy, interact } from './items.js';
@@ -7,7 +8,7 @@ import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
 import { createScreens } from './screens.js';
-import { enterFullscreen, touchDevice } from './touch.js';
+import { enterFullscreen, fullscreenOn, toggleFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { GameView } from './view/gameview.js';
 import { createWorld, step } from './world.js';
@@ -26,6 +27,10 @@ export function start() {
   const touch = touchDevice(),
     networked = onlineEnabled();
   document.body.classList.toggle('touch', touch);
+  // Telefonda oyun kökünü (body) tarayıcı çubuklarının bıraktığı görünür alana kilitler: üst çubuk, giriş ekranının
+  // üst şeridi ve lobideki oda kodu adres çubuğunun altında kalmaz (bkz. src/gorunur-alan.js, style.css → `html.vv`).
+  // Sahneden önce: tuval ilk ölçüsünü kilitlenmiş kökten alsın.
+  const gorunurAlan = gorunurAlanaKilitle(window);
   if (touch) {
     // Telefonda skor tablosu kapalı başlar (Skor düğmesi açar), düğme yazılarında klavye kısayolu yok.
     $('#score-panel').hidden = true;
@@ -76,6 +81,34 @@ export function start() {
   };
   const toggleCamera = () => setCamera(game.camera === 'iso' ? 'third' : 'iso');
   $('#cam-toggle').onclick = toggleCamera;
+
+  // Tam ekran: telefonda adres çubuğunun üstü yemesine karşı en kesin çare, bu yüzden hem giriş ekranının üst
+  // şeridinde hem oyun içindeki üst çubukta durur; ikisi de açık / kapalıyı birlikte gösterir. Play Store
+  // uygulamasında tarayıcı çubuğu zaten yok: düğmeler hiç görünmez.
+  const fullBtns = [$('#full-toggle'), $('#home-full')];
+  if (isApp() || !touch) for (const b of fullBtns) b.hidden = true;
+  else {
+    const syncFull = () => {
+      const on = fullscreenOn();
+      for (const b of fullBtns) b.setAttribute('aria-label', on ? 'Tam ekrandan çık' : 'Tam ekran');
+      fullBtns[0].textContent = on ? '⤡' : '⛶';
+      fullBtns[1].textContent = on ? '⤡ Tam ekrandan çık' : '⛶ Tam ekran';
+    };
+    for (const b of fullBtns)
+      b.onclick = () => {
+        toggleFullscreen();
+        // Çubuklar kaybolduktan sonra görünür alan değişir; tarayıcı değişimi geç bildirir, bir de biz okuyalım.
+        setTimeout(() => {
+          syncFull();
+          gorunurAlan.guncelle();
+        }, 120);
+      };
+    document.addEventListener('fullscreenchange', () => {
+      syncFull();
+      gorunurAlan.guncelle();
+    });
+    syncFull();
+  }
   document.body.classList.toggle('iso', game.camera === 'iso');
   game.view.setMode(game.camera);
 

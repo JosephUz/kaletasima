@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Kale Taşıma">
+  <!-- Ana ekran simgesi: uygulama simgesinin (scripts/icons.mjs → art) aynı kulesi ve altını. Maskeli (maskable)
+       simgede kenarlardan %10 kırpılabilir; önemli her şey ortadaki %80'lik alanda durur. -->
+  <rect width="100" height="100" fill="#273d3c"/>
+  <circle cx="50" cy="50" r="46" fill="#ffffff08"/>
+  <g transform="translate(50 50) scale(.86) translate(-50 -50)">
+    <path d="M50 29 V11" stroke="#f3ead3" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M51.2 11.5 L67 16.5 L51.2 21.5 Z" fill="#edc879"/>
+    <rect x="27" y="27" width="12" height="15" rx="2" fill="#f3ead3"/><rect x="44" y="27" width="12" height="15" rx="2" fill="#f3ead3"/><rect x="61" y="27" width="12" height="15" rx="2" fill="#f3ead3"/>
+    <rect x="31" y="40" width="38" height="44" rx="2" fill="#f3ead3"/>
+    <rect x="27" y="37" width="46" height="7" rx="1.5" fill="#d9ccab"/>
+    <rect x="46" y="50" width="8" height="10" rx="4" fill="#273d3c"/>
+    <path d="M42 84 V71 a8 8 0 0 1 16 0 V84 Z" fill="#273d3c"/>
+    <circle cx="71" cy="76" r="12" fill="#f5c86a" stroke="#a27435" stroke-width="2.2"/>
+    <circle cx="71" cy="76" r="6.5" fill="none" stroke="#a27435" stroke-width="1.8"/>
+  </g>
+</svg>

@@ -56,7 +56,10 @@ export function createTouch(parent, buttons, hooks) {
     if (kind === 'stick') {
       if ([...fingers.values()].some(o => o.kind === 'stick')) return;
       stick.hidden = false;
-      stick.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
+      // Konum dokunmatik katmana göre: kök görünür alana kilitlendiğinde (telefonda adres çubuğu) katman pencerenin
+      // tepesinden aşağıda başlayabilir.
+      const r = pad.getBoundingClientRect();
+      stick.style.transform = `translate(${e.clientX - r.left}px,${e.clientY - r.top}px)`;
       knob.style.transform = '';
       setStick(0, 0);
     } else if (kind === 'look') {
@@ -142,4 +145,19 @@ export function enterFullscreen() {
   Promise.resolve(go)
     .then(() => screen.orientation?.lock?.('landscape'))
     .catch(() => {});
+}
+
+/** Tam ekran şu an açık mı (düğmelerin simgesi buna göre). */
+export const fullscreenOn = () => !!document.fullscreenElement;
+
+/**
+ * Tam ekran düğmesi (telefonda belirgin): tarayıcı çubuklarını tümden kaldırır, tekrar basınca geri getirir.
+ * Telefonda adres çubuğunun üst kısmı yemesine karşı en kesin çare; desteklenmeyen tarayıcıda sessiz geçer.
+ */
+export function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen?.()?.catch?.(() => {});
+    return;
+  }
+  enterFullscreen();
 }
