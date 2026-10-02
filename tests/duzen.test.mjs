@@ -1,25 +1,18 @@
 // Düzen testi: yatay telefon taklidinde oyun ekranı sayfayı yatayda kaydırmamalı. Gece testi 2026-09-28'de
 // üstteki başlık şeridinin arkasındaki gölge (`.top::before`) ekranın 11px dışına taştığı için sayfa kayıyordu.
-// Playwright ister (bkz. README); kurulu Chrome değil, başsız kabuk kullanılır. Depo tarayıcısız da denenebilsin diye
-// Playwright yoksa test atlanır; başka yerdeki kurulum PLAYWRIGHT_MODULE ile verilebilir.
+// Playwright ister (bkz. README); kurulu Chrome değil, başsız kabuk kullanılır. Kurulumu tests/playwright-bul.mjs
+// kendi arar (bu depo, sonra komşu depolar), böylece `npm test` ortam değişkeni olmadan da koşar; PLAYWRIGHT_MODULE
+// ile başka bir kurulum verilebilir. Hiçbiri yoksa test atlanır.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { playwrightYukle } from './playwright-bul.mjs';
 
 const kok = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PW = process.env.PLAYWRIGHT_MODULE || 'playwright';
-
-
-const pwYukle = async () => {
-  try {
-    return await import(fs.existsSync(PW) ? pathToFileURL(path.join(PW, 'index.mjs')).href : PW);
-  } catch {
-    return null;
-  }
-};
+const pwYukle = () => playwrightYukle(kok);
 
 /**
  * Kurulu Chrome kullanılmaz: başsız Chrome'da fare kilidi (pointer lock) Windows'ta gerçek imleci görünmeyen pencereye
