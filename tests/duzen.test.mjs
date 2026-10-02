@@ -9,7 +9,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { playwrightYukle } from './playwright-bul.mjs';
+import { playwrightYukle, tarayiciKoku } from './playwright-bul.mjs';
 
 const kok = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pwYukle = () => playwrightYukle(kok);
@@ -21,8 +21,8 @@ const pwYukle = () => playwrightYukle(kok);
  * altındaki en yeni kabuk, o da yoksa Playwright'ın varsayılanı.
  */
 const basizKabuk = () => {
-  const klasor = path.join(process.env.LOCALAPPDATA || '', 'ms-playwright');
-  if (!fs.existsSync(klasor)) return null;
+  const klasor = tarayiciKoku();
+  if (!klasor || !fs.existsSync(klasor)) return null;
   const surum = fs.readdirSync(klasor).filter(d => d.startsWith('chromium_headless_shell-')).sort().pop();
   const exe = surum && path.join(klasor, surum, 'chrome-headless-shell-win64', 'chrome-headless-shell.exe');
   return exe && fs.existsSync(exe) ? exe : null;

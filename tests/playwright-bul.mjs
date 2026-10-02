@@ -9,21 +9,37 @@
  *
  * Komşu kurulumlar arasından, **istediği Chromium yapısı indirilmiş olan** seçilir: Playwright'ın sürümüyle
  * ms-playwright altındaki tarayıcı yapısı eşleşmezse başlatma "Executable doesn't exist" ile düşer.
+ * Hiçbir adayın tarayıcısı inmemişse null dönülür; testleri düşürmek yerine atlatmak doğru olan.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-/** Bir kurulumun istediği Chromium yapısı indirilmiş mi (ms-playwright/chromium-<revizyon>). */
+/** ms-playwright kökü. Git Bash'te LOCALAPPDATA tanımsız olabiliyor; USERPROFILE'dan türetilir. */
+export function tarayiciKoku() {
+  const yerel = process.env.LOCALAPPDATA || (process.env.USERPROFILE && path.join(process.env.USERPROFILE, 'AppData', 'Local'));
+  return yerel ? path.join(yerel, 'ms-playwright') : null;
+}
+
+/**
+ * Bir kurulumun istediği Chromium yapıları indirilmiş mi. Testler başsız kabuğu açtığı için
+ * `chromium-<rev>` yetmez, `chromium_headless_shell-<rev>` de aranır (ikisi ayrı indiriliyor).
+ */
 function tarayicisiVar(klasor) {
-  const tarayiciKok = path.join(process.env.LOCALAPPDATA || '', 'ms-playwright');
-  if (!fs.existsSync(tarayiciKok)) return false;
+  const tarayiciKok = tarayiciKoku();
+  if (!tarayiciKok || !fs.existsSync(tarayiciKok)) return false;
   const bilgi = path.join(klasor, '..', 'playwright-core', 'browsers.json');
   if (!fs.existsSync(bilgi)) return true; // bilemiyoruz: denemeye değer
   try {
     const { browsers } = JSON.parse(fs.readFileSync(bilgi, 'utf8'));
-    const c = browsers.find(b => b.name === 'chromium');
-    return !c || fs.existsSync(path.join(tarayiciKok, `chromium-${c.revision}`));
+    const rev = ad => browsers.find(b => b.name === ad)?.revision;
+    const chromium = rev('chromium');
+    if (!chromium) return true;
+    const kabuk = rev('chromium-headless-shell') || chromium;
+    return (
+      fs.existsSync(path.join(tarayiciKok, `chromium-${chromium}`)) &&
+      fs.existsSync(path.join(tarayiciKok, `chromium_headless_shell-${kabuk}`))
+    );
   } catch {
     return true;
   }
@@ -61,7 +77,8 @@ export function playwrightYolu(kok) {
     }
     dizin = ust;
   }
-  return adaylar.find(tarayicisiVar) || adaylar[0] || null;
+  // Tarayıcısı inmemiş bir kuruluma düşmek yok: o zaman testler atlanır (bkz. duzen.test.mjs).
+  return adaylar.find(tarayicisiVar) || null;
 }
 
 /** Playwright modülünü yükler; yoksa null (çağıran testi atlar). */
