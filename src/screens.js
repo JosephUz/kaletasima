@@ -38,6 +38,7 @@ export function createScreens(game, ui, input, actions) {
   function pause() {
     if (!game.started) return;
     show(game.screen === 'menu' ? null : 'menu');
+    syncMenu();
     $('#online-note').textContent = game.online ? 'Çevrim içi maç menü açıkken devam eder.' : '';
   }
 
@@ -188,7 +189,7 @@ export function createScreens(game, ui, input, actions) {
     }
   };
   // Oyun içi düğmeler, menü, kısayollar, karne
-  for (const id of ['help', 'home-help', 'menu-help', 'help-bottom']) $('#' + id).onclick = help;
+  for (const id of ['help', 'home-help', 'menu-help']) $('#' + id).onclick = help;
   $('#help-close').onclick = closeHelp;
   $('#pause').onclick = pause;
   $('#resume').onclick = () => {
@@ -202,15 +203,41 @@ export function createScreens(game, ui, input, actions) {
     game.view.setQuality(game.quality);
     ui.update();
   };
-  const soundText = () => ($('#sound').textContent = 'Ses: ' + (game.sound ? 'Açık' : 'Kapalı'));
-  soundText();
-  $('#sound').onclick = () => {
-    game.sound = !game.sound;
-    soundText();
+  /**
+   * STANDART üst araç çubuğu ve Esc menüsü: Ses ve Müzik düğmeleri iki yerdedir (giriş ekranının sağ üst çubuğu
+   * ve duraklatma menüsü). Tek bir yazıcı ikisini birden tazeler, böylece hangisinden değiştirilirse
+   * değiştirilsin ikisi aynı durumu gösterir. Yazılar birebir standarttaki gibi: "Ses: açık" / "Müzik: kapalı".
+   */
+  const SES_DUGMELERI = ['#home-sound', '#sound'],
+    MUZIK_DUGMELERI = ['#home-muzik', '#muzik'];
+  function syncMenu() {
+    for (const sec of SES_DUGMELERI) $(sec).textContent = 'Ses: ' + (game.sound ? 'açık' : 'kapalı');
+    for (const sec of MUZIK_DUGMELERI) $(sec).textContent = 'Müzik: ' + (game.muzik.acik ? 'açık' : 'kapalı');
+    const yuzde = Math.round(game.muzik.ses * 100);
+    $('#muzik-ses').value = String(yuzde);
+    $('#muzik-yuzde').textContent = '%' + yuzde;
+    // Çevrim içi maçta menüden çıkmak odadan da çıkmaktır; yazı bunu söylesin.
+    $('#leave').textContent = game.online ? 'Odadan çık' : 'Ana menü';
+  }
+  function setSound(on) {
+    game.sound = on;
     try {
-      localStorage.setItem('kale.sound', game.sound ? 'on' : 'off');
+      localStorage.setItem('kale.sound', on ? 'on' : 'off');
     } catch {}
+    syncMenu();
+  }
+  function setMuzik(on) {
+    game.muzik.degistir(on);
+    syncMenu();
+  }
+  for (const sec of SES_DUGMELERI) $(sec).onclick = () => setSound(!game.sound);
+  for (const sec of MUZIK_DUGMELERI) $(sec).onclick = () => setMuzik(!game.muzik.acik);
+  // Müzik ses düzeyi sürgüsü Müzik düğmesinin altındadır; parça gelince sesi doğrudan buradan alacak.
+  $('#muzik-ses').oninput = e => {
+    game.muzik.setSes(Number(e.target.value) / 100);
+    syncMenu();
   };
+  syncMenu();
   $('#score-toggle').onclick = () => ($('#score-panel').hidden = !$('#score-panel').hidden);
   $('#buy').onclick = () => {
     if (game.started && !game.screen) input.edges.buy = true;

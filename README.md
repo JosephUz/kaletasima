@@ -67,9 +67,13 @@ Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç deva
 | B | Kendi kalende 15 altına eşya |
 | 1 / 2 / 3 | Salonun arkasındaki tek merdivende kat seç (0,8 sn tırmanma: karakter ve kamera kata kayar, "↑ 2. KAT" yazısı çıkar; bu sırada yürünmez) |
 | Tab | Omuz kamerasında fareyi bırak / kilitle |
-| F1 / Esc | Kısayollar / menü |
+| F1 / Esc | Kontroller / menü |
 
-Merdivenin yanında kat düğmeleri de görünür. Menüde grafik ve ses ayarı vardır. Çevrim içi maç menü açıkken devam eder.
+Merdivenin yanında kat düğmeleri de görünür. Çevrim içi maç menü açıkken devam eder.
+
+**Standart üst araç çubuğu ve Esc menüsü** (bütün JosephUz oyunlarında aynı): giriş ekranının sağ üstünde tek satır hâlinde `← josephuz.com` · `Ses: açık/kapalı` · `Müzik: açık/kapalı` · `Kontroller F1`. Duraklatma (Esc) menüsünde aynı sırayla `DEVAM ET →` · `Kontroller F1` · `Ses: …` · `Müzik: …` (altında müzik ses sürgüsü) · oyuna özgü `Grafik: …` · `Ana menü` (çevrim içi maçta `Odadan çık`) · `josephuz.com'a dön`. İki yerdeki Ses ve Müzik düğmesi aynı durumu gösterir (`src/screens.js` → `syncMenu`) ve ayarlar tarayıcıda kalır: `kale.sound`, `kale.muzik`, `kale.muzik.ses`. Dar ekranda yazılar kısalır (`josephuz.com` düşer, `←` kalır) ama sıra ve dört düğme aynı kalır.
+
+**Müzik henüz yok.** Kale Taşıma'nın parçaları bestelenmedi: `src/muzik.js` bugün yalnız Müzik düğmesinin durumunu ve ses düzeyini (varsayılan %35) tutar, çalan bir şey yoktur. `?muzik=0` / `?muzik=1` saklanan ayarı ezer. Parçalar gelince çalma bölümü aynı dosyaya eklenir; düğmeler ve saklanan anahtarlar hazır bekliyor.
 
 ## Uygulama ve doğrulama
 
@@ -104,7 +108,7 @@ node tests/network-smoke.mjs
 node tests/browser-smoke.mjs
 ```
 
-Son iki test çalışan sunucu ister; `npm run test:mobil` (telefonda üst kısım, bkz. yukarısı) kendi sunucusunu boş bir portta açar. Tarayıcı testleri Playwright'ın kendi başsız Chromium'unu kullanır (kurulu Chrome'a dokunmaz; başka bir tarayıcı için `CHROME_PATH`). Playwright depoya bağımlılık olarak eklenmez, isteğe bağlıdır: `npm i -D playwright` ile kurulur ya da komşu bir depodaki kurulum kullanılır — `tests/playwright-bul.mjs` önce bu depoya, sonra üst klasörlerdeki komşu depolara bakar ve **istediği Chromium yapısı indirilmiş** olanı seçer, böylece `npm test` ortam değişkeni olmadan da koşar. Başka bir kurulumu `PLAYWRIGHT_MODULE` ile (klasör yolu ya da `file://` URL'si) elle verebilirsin. `npm test` içindeki düzen testi (`tests/duzen.test.mjs`) da aynı yolu kullanır; kendi sunucusunu açtığı için ayrıca sunucu istemez, hiçbir yerde Playwright yoksa sessizce atlanır. Ağ testi 10 gerçek WebSocket istemcisi, koltuk doluluğu, yeniden bağlanma ve yetki devrini kontrol eder. Tarayıcı testi iki bağımsız oturumla modları ve oynanışı doğrular. Ekran görüntüleri `artifacts/` içine yazılır. Çok oyunculu internet gecikmesi ve insanlarla oyun dengesi bu yerel kontrollerin kapsamı dışındadır.
+Son iki test çalışan sunucu ister; `npm run test:mobil` (telefonda üst kısım, bkz. yukarısı) kendi sunucusunu boş bir portta açar. Tarayıcı testleri Playwright'ın kendi başsız Chromium'unu kullanır (kurulu Chrome'a dokunmaz; başka bir tarayıcı için `CHROME_PATH`). Playwright depoya bağımlılık olarak eklenmez, isteğe bağlıdır: `npm i -D playwright` ile kurulur ya da komşu bir depodaki kurulum kullanılır — `tests/playwright-bul.mjs` önce bu depoya, sonra üst klasörlerdeki komşu depolara bakar ve **istediği Chromium yapısı indirilmiş** olanı seçer, böylece `npm test` ortam değişkeni olmadan da koşar. Başka bir kurulumu `PLAYWRIGHT_MODULE` ile (klasör yolu ya da `file://` URL'si) elle verebilirsin. `npm test` içindeki düzen testi (`tests/duzen.test.mjs`) ve standart araç çubuğu testi (`tests/standart-cubuk.test.mjs`) da aynı yolu kullanır; sunucularını kendileri açar (`tests/yerel-sunucu.mjs`), hiçbir yerde Playwright yoksa yalnız tarayıcı isteyen bölümler sessizce atlanır. Araç çubuğu testi önce sırayı ve yazıları kaynaktan denetler, sonra masaüstü ve üç telefon tutuşunda (667x375, 844x390, 390x844) çubuğun tek satırda kaldığını, taşmadığını ve oyun adına binmediğini, Esc menüsünün de kaydırmasız sığdığını ölçer; görüntüler `artifacts/standart-cubuk-*.png`. Ağ testi 10 gerçek WebSocket istemcisi, koltuk doluluğu, yeniden bağlanma ve yetki devrini kontrol eder. Tarayıcı testi iki bağımsız oturumla modları ve oynanışı doğrular. Ekran görüntüleri `artifacts/` içine yazılır. Çok oyunculu internet gecikmesi ve insanlarla oyun dengesi bu yerel kontrollerin kapsamı dışındadır.
 
 Three.js (MIT lisanslı) npm paketinden gelir: `node_modules/three/LICENSE`. Görseller ve sesler prosedürel üretilir.
 

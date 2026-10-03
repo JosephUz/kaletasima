@@ -4,6 +4,7 @@ import { createInput } from './input.js';
 import { buy, interact } from './items.js';
 import { melee, throwClub } from './combat.js';
 import { Network } from './net/client.js';
+import { createMuzik } from './muzik.js';
 import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
@@ -47,6 +48,9 @@ export function start() {
     fps: 60,
     quality: 1,
     sound: true,
+    // Müzik ayarı (standart çubuktaki ve Esc menüsündeki "Müzik" düğmesi). Parçalar henüz bestelenmedi:
+    // bugün yalnız ayar tutulur, çalan bir şey yok (bkz. src/muzik.js).
+    muzik: createMuzik(),
   };
   // Ses ayarı tarayıcıda kalır (menüdeki Ses düğmesi).
   try {
