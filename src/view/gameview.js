@@ -1,8 +1,8 @@
 import * as T from 'three';
-import { roomAt, visibleTo } from '../castle.js';
+import { allied, roomAt, visibleTo } from '../castle.js';
 import { CASTLE, ISO, RULES } from '../config.js';
 import { escapeHtml, setHtml } from '../html.js';
-import { countItems } from '../rules.js';
+import { countItems, dist } from '../rules.js';
 import { effectMethods } from './effects.js';
 import { modelMethods } from './models.js';
 
@@ -265,6 +265,7 @@ export class GameView {
     this.syncPointers(w, hero, elevation, started, aim, nearest);
     this.updateEffects(dt);
     this.syncLabels();
+    this.syncClaimArrows(w, hero, started);
     this.updateFloaters(dt);
     this.renderer.render(this.scene, this.camera);
   }
@@ -447,6 +448,70 @@ export class GameView {
       hero.z + Math.cos(hero.angle) * 1.2,
     );
     this.facing.rotation.set(Math.PI / 2, 0, -hero.angle);
+  }
+  /**
+   * Kazanma geri sayımı: hedefe ulaşmış rakip kaleye (takımlı maçta o takımın eşyalı kalelerine) Juland görev oku gibi
+   * yön okları. Kale ekrandaysa üstünde aşağı bakan ok (yakınsa hiç), değilse ekran kenarında kaleye dönük ok.
+   * Kendi (ya da takımının) geri sayımında ve o kalenin içindeyken ok çıkmaz.
+   */
+  syncClaimArrows(w, hero, started) {
+    const root = (this.arrowRoot ??= document.querySelector('#claim-arrows'));
+    if (!root) return;
+    const c = w.claimant,
+      targets =
+        !started || c === null || w.winner !== null || allied(w, hero.id, c)
+          ? []
+          : w.mode === 'solo'
+            ? [w.bases[c]]
+            : w.bases.filter(b => w.players[b.id].team === w.players[c].team && countItems(w, b.id) > 0);
+    const { w: genislik, h: yukseklik } = this.olcu(),
+      v = this.projected;
+    let n = 0;
+    for (const b of targets) {
+      const d = dist(b, hero);
+      if (d < b.r) continue;
+      // Arkada mı kamera uzayından. Perspektifte arkadaki hedefin izdüşümü ters döner, geri çevrilir; izometrik
+      // (ortografik) izdüşüm arkadakini de doğru yönde verir, çevirmek oku aynalar.
+      // Nişan kale gövdesine: omuz üstü kamerada uzak kalenin tepesi ekranın üst kenarını aşar.
+      v.set(b.x, CASTLE.height, b.z).applyMatrix4(this.camera.matrixWorldInverse);
+      const behind = v.z > 0,
+        flip = behind && this.camera.isPerspectiveCamera;
+      v.applyMatrix4(this.camera.projectionMatrix);
+      let x = flip ? -v.x : v.x,
+        y = flip ? -v.y : v.y,
+        angle = Math.PI / 2;
+      const onScreen = !behind && Math.abs(x) < 0.9 && y > -0.85 && y < 0.92;
+      if (onScreen && d < 30) continue;
+      if (!onScreen) {
+        if (flip && Math.hypot(x, y) < 0.2) (x = 0), (y = -1);
+        const s = Math.max(Math.abs(x) / 0.86, (y > 0 ? y / 0.78 : -y / 0.7));
+        angle = -Math.atan2(y, x);
+        x /= s;
+        y /= s;
+      }
+      const el = root.children[n++] ?? root.appendChild(document.createElement('div'));
+      if (!el.firstChild) el.innerHTML = '<i>➤</i><small></small>';
+      el.hidden = false;
+      el.style.left = ((x + 1) / 2) * genislik + 'px';
+      el.style.top = Math.max(70, ((1 - y) / 2) * yukseklik - (onScreen ? 30 : 0)) + 'px';
+      el.style.setProperty('--renk', w.players[b.id].color);
+      el.firstChild.style.transform = 'rotate(' + angle + 'rad)';
+      el.lastChild.textContent = w.players[b.id].name + ' · ' + Math.round(d) + ' m';
+      this.clearTopHud(el);
+    }
+    for (let i = n; i < root.children.length; i++) root.children[i].hidden = true;
+  }
+  /** Ok üst şeride (başlık, bildirim, kazanma bandı) biniyorsa onların altına iner; yönü değişmez. */
+  clearTopHud(el) {
+    const engel = document.querySelectorAll('.top > *, #toast.show, #claim:not([hidden])');
+    for (let tur = 0; tur < 4; tur++) {
+      const r = el.getBoundingClientRect(),
+        e = [...engel]
+          .map(o => o.getBoundingClientRect())
+          .find(o => o.width && r.left < o.right && r.right > o.left && r.top < o.bottom && r.bottom > o.top);
+      if (!e) return;
+      el.style.top = parseFloat(el.style.top) + e.bottom + 4 - r.top + 'px';
+    }
   }
   /** Dünya etiketlerini ekrana yansıtır; ekran dışı ya da üst / alt şerit altındakiler gizlenir. */
   syncLabels() {
