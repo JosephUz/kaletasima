@@ -20,6 +20,12 @@ Konteyner adı `kale-tasima`; otomatik yeniden başlatma ve `/health` sağlık k
 - **Oda kur:** 5 maviye karşı 5 kırmızı, 10 koltuk. Mod seçilmez; oyuncular istedikleri koltuğa oturur, boş koltuklar bottur.
   Oyuncuların hepsi aynı takımdaysa **Co-op** (botlara karşı birlikte), iki takımda da oyuncu varsa **PvP** olur. Lobide o
   anki mod görünür; maç sürerken karşı takıma katılan olursa maç PvP'ye döner. Kaça kaç seçimi yoktur.
+- **Açık odalar / Hızlı katıl:** odalar varsayılan herkese açıktır ve giriş ekranındaki listede görünür (oda sahibi, mod,
+  zorluk, n/10 oyuncu, "Lobide bekliyor" ya da "Maç sürüyor"); satıra basan kodsuz katılır. Hızlı katıl en kalabalık bekleyen
+  odaya, yoksa sürmekte olan maçın boş koltuğuna oturtur, o da yoksa seçili zorlukla yeni oda kurar. **Özel oda** işaretlenerek
+  kurulan oda listede ve hızlı katılda görünmez, yalnız kodla / linkle girilir. Dolu, bitmiş ve bağlı oyuncusu kalmamış odalar
+  listelenmez. Sunucu listeyi (`rooms`) giriş ekranındaki bağlantılara bağlanınca, odadan çıkınca ve liste değişince
+  (en çok saniyede bir) kendisi gönderir; testi: `tests/oda-listesi.test.mjs`.
 - On kişilik modlarda daha geniş bir çember vardır; mavi ve kırmızı kaleler dönüşümlü dizilir. Bütün kapılar merkeze bakar.
 
 **Bot zorluğu** giriş ekranında seçilir (Kolay / Normal / Zor, varsayılan Normal; tarayıcı hatırlar). Çevrim içi odada oda kuranın seçimi geçerlidir ve lobide görünür.

@@ -6,7 +6,9 @@ import { serverUrl } from '../platform.js';
  * koparsa aynı koltuğa dönülür. Bağlantı koparsa odadayken 1,5 sn'de, boştayken (sunucu kapalı olabilir) 15 sn'de bir
  * yeniden denenir. ready(true/false): sunucu kabul etti / bağlantı kapandı (oda düğmeleri buna göre açılır ya da "Yakında").
  *
- * hooks: lobby(m), start(world), snapshot(world), error(message), status(message), online(n), ready(up)
+ * Giriş ekranındayken sunucu açık oda listesini (`rooms`) kendiliğinden gönderir: bağlanınca, odadan çıkınca, liste değişince.
+ *
+ * hooks: lobby(m), start(world), snapshot(world), error(message), status(message), online(n), ready(up), rooms(list)
  */
 export class Network {
   constructor(hooks) {
@@ -60,6 +62,7 @@ export class Network {
         } else if (m.type === 'error') this.hooks.error(m.message);
         else if (m.type === 'pong') this.rtt = Math.round(performance.now() - m.at);
         else if (m.type === 'online') this.hooks.online?.(m.n);
+        else if (m.type === 'rooms') this.hooks.rooms?.(m.list);
       };
       ws.onerror = () => {};
       ws.onclose = () => {

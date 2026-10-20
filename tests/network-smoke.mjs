@@ -2,7 +2,7 @@ import WebSocket from 'ws';
 import assert from 'node:assert/strict';
 const sockets = [];
 async function client(name, token) {
-  const ws = new WebSocket('ws://127.0.0.1:5185'),
+  const ws = new WebSocket('ws://127.0.0.1:' + (process.env.PORT || 5185)),
     q = [],
     waiters = [];
   sockets.push(ws);

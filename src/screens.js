@@ -5,7 +5,7 @@ import { onlineEnabled } from './platform.js';
 import { countItems } from './rules.js';
 
 /**
- * Ekranlar: giriş (ad, bot zorluğu, tek başına, oda kur, odaya katıl), lobi (koltuklar), menü, kısayollar, maç karnesi. Düğmelerin
+ * Ekranlar: giriş (ad, bot zorluğu, tek başına, oda kur / özel oda, odaya katıl, açık odalar, hızlı katıl), lobi (koltuklar), menü, kısayollar, maç karnesi. Düğmelerin
  * bağlantıları da buradadır; oyunu başlatan / bitiren işler main.js'ten actions ile gelir.
  *
  * actions: startSolo(), goHome(), connectAction(type, body)
@@ -77,7 +77,10 @@ export function createScreens(game, ui, input, actions) {
       (lobby.mode === 'pvp' ? 'PvP' : 'Co-op') +
       " · 5'e 5 · Zorluk: " +
       (DIFFICULTY_LABEL[lobby.difficulty] || 'Normal') +
-      '. Boş koltuğa tıklayıp takımını seç: herkes aynı takımdaysa co-op, iki takımda da oyuncu varsa PvP olur.';
+      '. Boş koltuğa tıklayıp takımını seç: herkes aynı takımdaysa co-op, iki takımda da oyuncu varsa PvP olur.' +
+      (lobby.private
+        ? ' Özel oda: açık odalar listesinde görünmez, yalnız kodla ya da linkle girilir.'
+        : ' Oda açık odalar listesinde görünür, isteyen katılabilir.');
     for (const team of [0, 1]) {
       const root = $(team === 0 ? '#blue-seats' : '#red-seats');
       root.replaceChildren();
@@ -143,7 +146,43 @@ export function createScreens(game, ui, input, actions) {
 
   // Giriş ekranı
   $('#solo').onclick = actions.startSolo;
-  $('#create').onclick = () => actions.connectAction('create', { difficulty });
+  $('#create').onclick = () => actions.connectAction('create', { difficulty, private: $('#private-room').checked });
+  // Açık odalar: sunucu giriş ekranındakilere listeyi kendiliğinden gönderir (bkz. server/rooms.mjs). Satıra basan
+  // kodsuz katılır; hızlı katıl en uygun odaya oturtur, yoksa seçili zorlukla herkese açık oda kurar.
+  $('#quick').onclick = () => actions.connectAction('quick', { difficulty });
+  function renderRooms(list) {
+    const root = $('#room-list');
+    root.replaceChildren();
+    if (!list.length) {
+      root.innerHTML = '<div class="rooms-empty">Şu an açık oda yok. Hızlı katıl yeni bir oda kurar.</div>';
+      return;
+    }
+    for (const r of list) {
+      const b = document.createElement('button'),
+        playing = r.state === 'playing';
+      b.className = 'room-row';
+      b.dataset.code = r.code;
+      b.innerHTML =
+        '<span><b></b><small>' +
+        (r.mode === 'pvp' ? 'PvP' : 'Co-op') +
+        ' · ' +
+        escapeHtml(DIFFICULTY_LABEL[r.difficulty] || 'Normal') +
+        ' · ' +
+        r.players +
+        '/' +
+        r.seats +
+        ' oyuncu · <i class="' +
+        (playing ? 'playing' : '') +
+        '">' +
+        (playing ? 'Maç sürüyor' : 'Lobide bekliyor') +
+        '</i></small></span><em>KATIL →</em>';
+      b.querySelector('b').textContent = r.host || 'Oyuncu';
+      b.title = playing ? 'Maç sürüyor: boş koltuktaki botun yerine geçersin.' : 'Lobiye girersin, oda sahibi başlatır.';
+      b.onclick = () => actions.connectAction('join', { code: r.code });
+      root.append(b);
+    }
+  }
+  renderRooms([]);
   for (const b of document.querySelectorAll('[data-difficulty]')) b.onclick = () => setDifficulty(b.dataset.difficulty);
   setDifficulty(difficulty);
   $('#join-toggle').onclick = () => {
@@ -168,6 +207,8 @@ export function createScreens(game, ui, input, actions) {
         else if (up) tag?.remove();
       }
     }
+    // Açık odalar ve "Özel oda" seçeneği yalnız sunucu açıkken görünür (kapalıyken listelenecek bir şey yok).
+    $('#rooms').hidden = $('#private-row').hidden = !up;
   }
   setServer(false);
   const code = onlineEnabled() && new URLSearchParams(location.search).get('oda');
@@ -251,5 +292,5 @@ export function createScreens(game, ui, input, actions) {
     else actions.startSolo();
   };
 
-  return { show, help, closeHelp, pause, result, renderLobby, nick, setServer, difficulty: () => difficulty };
+  return { show, help, closeHelp, pause, result, renderLobby, renderRooms, nick, setServer, difficulty: () => difficulty };
 }

@@ -193,6 +193,7 @@ export function start() {
 
   const net = new Network({
     lobby: screens.renderLobby,
+    rooms: screens.renderRooms,
     start: w => launch(w, true),
     snapshot: receive,
     error: message => {

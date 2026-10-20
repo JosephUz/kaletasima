@@ -152,3 +152,22 @@ body.touch .score-stack .score-values small{font-size:0}
 body.touch .score-stack .score-values small::before{content:"♜";font-size:8px;color:#ffcf79;margin-left:1px}
 body.touch .score-stack .score-values span{display:inline;margin:0;font-size:9px;font-weight:400}
 #claim-arrows>div{position:absolute;z-index:6;display:grid;place-items:center;pointer-events:none;transform:translate(-50%,-50%)}#claim-arrows i{font-style:normal;font-size:36px;line-height:1;color:var(--renk,#ffd23f);text-shadow:0 0 6px #000,0 0 2px #000}#claim-arrows small{margin-top:2px;padding:1px 7px;border-radius:8px;background:#000a;color:#ffe9a8;font-size:11px;font-weight:700;white-space:nowrap}
+
+/* Açık odalar (giriş ekranı, sunucu açıkken): herkese açık, boş koltuğu olan odalar; satıra basınca koltuğa oturulur.
+   "Özel oda" işaretliyse kurulan oda listede ve hızlı katılda görünmez. Liste en çok üç satır yüksekliğinde kayar. */
+.private-toggle{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#d6e2d4;cursor:pointer;width:max-content;max-width:100%}
+.private-toggle input{width:16px;height:16px;padding:0;margin:0;accent-color:#edc879;flex:0 0 auto}
+.private-toggle small{color:#9fb7aa;font-size:11px}
+#rooms{width:440px;margin-top:16px;padding:12px;background:#102d29cc;border:1px solid #9ebca433;border-radius:12px}
+.rooms-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+#quick{padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1px;border-color:#edc87999;color:#ffe0a7}#quick span{margin-left:4px}
+#room-list{display:flex;flex-direction:column;gap:6px;max-height:186px;overflow-y:auto;scrollbar-width:thin}
+.room-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:9px 12px;min-height:54px;background:#173938e8}
+.room-row>span{min-width:0}.room-row b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-row small{display:block;margin-top:3px;font-size:11px;color:#a9c0b3}.room-row small i{font-style:normal;color:#8fe08f}.room-row small i.playing{color:#ffd180}
+.room-row em{flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:1px}
+.rooms-empty{padding:12px;font-size:12px;color:#a9c0b3;text-align:center;border:1px dashed #9ebca440;border-radius:9px}
+@media(max-width:650px){#rooms{width:auto}.private-toggle{width:auto}.private-toggle small{display:none}}
+@media(max-height:560px){#rooms{width:auto;margin-top:10px;padding:9px}#room-list{max-height:124px}.room-row{min-height:46px;padding:6px 10px}.private-toggle{margin-top:8px}}
+/* Yatay telefon: liste kaydırmanın altında kalmasın, sağdaki boş sahne alanında ayrı sütun olur. */
+@media(max-height:560px) and (min-width:700px){.home-content{width:min(470px,calc(95vw - 330px))}#rooms{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(62px + var(--sp-top));width:290px;margin:0;max-height:calc(100% - 78px - var(--sp-top));display:flex;flex-direction:column}#rooms[hidden]{display:none}#room-list{max-height:none;flex:1 1 auto;min-height:0}}

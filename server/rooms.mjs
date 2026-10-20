@@ -9,6 +9,11 @@ import { createWorld, step } from '../src/world.js';
  * oyuncuların hepsi aynı takıma oturursa co-op, iki takımda da oyuncu varsa PvP olur (bkz. src/rules.js roomMode). Oda sahibi maçı başlatır; maç
  * sürerken boş koltuğa katılınabilir, kopan oyuncuyu bot devralır ve 60 sn içinde aynı sekmeden dönerse koltuğuna oturur.
  * Simülasyon 30 Hz koşar, her oyuncuya kendi gördüğü durum 15 Hz gönderilir (bkz. src/net/snapshot.js).
+ *
+ * Açık oda listesi: odalar varsayılan herkese açıktır; "Özel oda" (create → private) listede ve hızlı katılda görünmez, yalnız
+ * kodla / linkle girilir. Odada olmayan (giriş ekranındaki) bağlantılara liste `rooms` iletisiyle gider: bağlanınca, istenince
+ * ve bir oda değişince (en çok saniyede bir, değişmediyse hiç). Hızlı katıl (`quick`) en dolu bekleyen odaya, yoksa sürmekte
+ * olan bir maçın boş koltuğuna oturtur; uygun oda yoksa herkese açık yeni oda kurar.
  */
 export function createRooms() {
   const rooms = new Map(),
@@ -24,6 +29,7 @@ export function createRooms() {
     mode: roomMode(seated(r)),
     difficulty: r.difficulty,
     state: r.state,
+    private: r.private,
     host: clients.get(r.host)?.id,
     seats: r.seats.map((token, i) => {
       const c = clients.get(token);
@@ -32,7 +38,46 @@ export function createRooms() {
   });
   const broadcast = r => {
     for (const token of r.seats) send(clients.get(token), lobby(r));
+    listChanged();
   };
+  // Açık oda listesi: herkese açık, bitmemiş, boş koltuğu olan ve içinde bağlı en az bir oyuncu bulunan odalar.
+  // Bekleyenler önce, sonra en kalabalık. Bitmiş maçın odası (karne ekranı) listelenmez.
+  const humans = r => r.seats.filter(Boolean).length;
+  const open = r =>
+    !r.private && r.state !== 'ended' && r.seats.some(t => !t) && r.seats.some(t => clients.get(t)?.ws);
+  const openRooms = () =>
+    [...rooms.values()]
+      .filter(open)
+      .sort((a, b) => (a.state === 'lobby' ? 0 : 1) - (b.state === 'lobby' ? 0 : 1) || humans(b) - humans(a));
+  const roomList = () => ({
+    type: 'rooms',
+    list: openRooms()
+      .slice(0, 20)
+      .map(r => ({
+        code: r.code,
+        host: clients.get(r.host)?.name || '',
+        mode: roomMode(seated(r)),
+        difficulty: r.difficulty,
+        state: r.state,
+        players: humans(r),
+        seats: r.seats.length,
+      })),
+  });
+  // Değişince giriş ekranındakilere yay: en çok saniyede bir ve yalnız liste gerçekten değiştiyse.
+  let listSent = '',
+    listTimer = null;
+  function listChanged() {
+    if (listTimer) return;
+    listTimer = setTimeout(() => {
+      listTimer = null;
+      const m = JSON.stringify(roomList());
+      if (m === listSent) return;
+      listSent = m;
+      for (const c of clients.values())
+        if (!c.room && c.ws?.readyState === 1 && c.ws.bufferedAmount < 256 * 1024) c.ws.send(m);
+    }, 1000);
+    listTimer.unref?.();
+  }
   // Çevrim içi sayısı: siteyi açan her sekme boşta bir bağlantı tutar (bkz. src/main.js). Değişince herkese, en çok 2 sn'de bir yayılır.
   const onlineCount = () => {
     let n = 0;
@@ -69,8 +114,10 @@ export function createRooms() {
       }
     }
     if (r.host === c.token) r.host = r.seats.find(t => clients.get(t)?.ws) || r.seats.find(Boolean) || null;
-    if (!r.seats.some(Boolean)) rooms.delete(r.code);
-    else broadcast(r);
+    if (!r.seats.some(Boolean)) {
+      rooms.delete(r.code);
+      listChanged();
+    } else broadcast(r);
   }
   function occupy(r, c, slot) {
     if (r.seats[slot] || slot < 0 || slot > 9) return false;
@@ -142,6 +189,7 @@ export function createRooms() {
     close: () => {
       clearInterval(timer);
       clearTimeout(onlineTimer);
+      clearTimeout(listTimer);
     },
     attach(ws) {
       let c = null,
@@ -181,6 +229,7 @@ export function createRooms() {
           send(c, { type: 'welcome', id: c.id, token: c.token });
           send(c, { type: 'online', n: onlineCount() });
           onlineChanged();
+          if (!c.room) send(c, roomList());
           const r = rooms.get(c.room);
           if (r) {
             if (r.world) {
@@ -199,10 +248,20 @@ export function createRooms() {
         if (m.type === 'leave') {
           leave(c);
           send(c, { type: 'left' });
+          send(c, roomList());
           return;
         }
-        if ((m.type === 'create' || m.type === 'join') && typeof m.name === 'string' && m.name.trim())
+        if (m.type === 'rooms') {
+          send(c, roomList());
+          return;
+        }
+        if (['create', 'join', 'quick'].includes(m.type) && typeof m.name === 'string' && m.name.trim())
           c.name = m.name.trim().slice(0, 16);
+        // Hızlı katıl: listenin başındaki oda (bekleyen, en kalabalık); yoksa herkese açık yeni oda.
+        if (m.type === 'quick') {
+          const r = openRooms().find(r => r.code !== c.room);
+          m = r ? { type: 'join', code: r.code } : { type: 'create', difficulty: m.difficulty };
+        }
         if (m.type === 'create') {
           if (rooms.size >= 32) return error(c, 'Oda sınırına ulaşıldı.');
           leave(c);
@@ -210,6 +269,7 @@ export function createRooms() {
           const r = {
             code,
             difficulty: DIFFICULTIES.includes(m.difficulty) ? m.difficulty : 'normal',
+            private: m.private === true,
             host: c.token,
             seats: Array(10).fill(null),
             state: 'lobby',
