@@ -101,7 +101,10 @@ body.touch #claim{top:calc(110px + var(--sp-top))}
 .home-content{padding:0 0 16px;margin-left:calc(5vw + env(safe-area-inset-left,0px));width:min(470px,72vw)}
 .home h2{font-size:28px;letter-spacing:-1px;margin:8px 0}.home-content>p{font-size:12px;line-height:1.5;margin:0 0 12px}
 .home-form{width:auto;gap:10px}.home-form .field{margin-bottom:10px;gap:5px}.home-form input{padding:9px}.segmented button{padding:7px 0}
-.home-buttons .primary{min-height:44px;width:200px}.home-buttons button{min-height:44px;white-space:nowrap}
+/* Yatay telefonda üç oda düğmesi `.home-content` kutusuna sığmalı: kutu `overflow:auto` olduğu için taşan düğmenin
+   merkezine dokunulamaz, dokunuş altındaki giriş ekranına gider (gece testi 2026-10-20, #join-toggle, iPhone 13
+   yatay). Yazı küçülür, dolgu ve aralar incelir; daha da dar ekranda düğme yazısı sarar ama kutudan taşmaz. */
+.home-buttons{gap:8px}.home-buttons .primary{min-height:44px;width:auto;gap:12px;padding:0 14px}.home-buttons button{min-height:44px;min-width:0;font-size:13px;padding:0 12px}
 .home-meta{margin-top:10px}.rule-cards,.home-note{display:none}
 .overlay{padding:calc(10px + var(--sp-top)) 10px 10px}.card{padding:18px 22px;max-height:calc(var(--sp-h) * .94)}.card h2{font-size:22px;margin:0 0 12px}.help-columns{gap:12px}dl{gap:4px 10px;line-height:1.45;font-size:11px}.menu-buttons{gap:7px}.menu-buttons button,.menu-buttons a.btn{padding:10px 14px}
 }
