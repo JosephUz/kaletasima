@@ -1,16 +1,28 @@
 import { DIFFICULTIES, DIFFICULTY_LABEL } from './config.js';
 import { $, escapeHtml } from './html.js';
 import { paylasti } from './olcum.js';
-import { onlineEnabled } from './platform.js';
+import { isApp, onlineEnabled } from './platform.js';
 import { countItems } from './rules.js';
 
 /**
- * Ekranlar: giriş (ad, bot zorluğu, tek başına, oda kur / özel oda, odaya katıl, açık odalar, hızlı katıl), lobi (koltuklar), menü, kısayollar, maç karnesi. Düğmelerin
+ * Ekranlar: giriş (ad, bot zorluğu, tek başına, hızlı katıl / oda kur / odaya katıl, açık odalar), lobi (koltuklar, kuranın ayarları), menü, kısayollar, maç karnesi. Düğmelerin
  * bağlantıları da buradadır; oyunu başlatan / bitiren işler main.js'ten actions ile gelir.
  *
- * actions: startSolo(), goHome(), connectAction(type, body)
+ * actions: startSolo(), goHome(), connectAction(type, body, statusText)
  */
 const OVERLAYS = ['home', 'lobby', 'menu', 'shortcuts', 'results'];
+
+/** Oda ayar özeti (liste satırı ve lobi gözü): `5v5 · Normal`. */
+export const roomSummary = difficulty => '5v5 · ' + (DIFFICULTY_LABEL[difficulty] || 'Normal');
+/** Oda kodu girişi: büyük harf, boşluk / tire atılır, 4 harf + 1 rakamsa tire eklenir (`KPRT4` → `KPRT-4`). */
+export function normalizeCode(text) {
+  const k = String(text || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  return /^[A-Z]{4}[0-9]$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4) : k;
+}
+/** Davet linki: statik sitede bulunulan adres (uygulamada site adresi), `?oda=KOD`. */
+export const inviteUrl = code => (isApp() ? 'https://kaletasima.josephuz.com' : location.origin) + '/?oda=' + code;
 
 export function createScreens(game, ui, input, actions) {
   let helpReturn = 'home',
@@ -70,40 +82,111 @@ export function createScreens(game, ui, input, actions) {
     } catch {}
   }
 
+  /**
+   * Bekleme odası (oda standardı §6): göz `ODA · <özet>`, kod, Linki kopyala, görünürlük; iki takım sütunu; kuranın
+   * ayarları (Zorluk + ODA: Herkese açık / Özel, ötekilerde kapalı); `N insan · M bot`; MAÇI BAŞLAT ↗ / Odadan çık.
+   * Boş koltuğa tıklayan oraya geçer. Kuran bir oyuncuyu sürükleyip bırakır ya da oyuncuya sonra koltuğa tıklar
+   * (dolu koltukta yer değiştirirler).
+   */
+  let moving = null;
   function renderLobby(lobby) {
-    const net = game.net;
+    const net = game.net,
+      isHost = lobby.host === net.id;
+    // Maç bitince oda sunucuda lobiye döner; karnedeki oyuncu "LOBİYE DÖN"e basınca geçer (bkz. #again).
+    if (lobby.state === 'lobby' && game.screen === 'results') return;
+    if (!isHost || lobby.state !== 'lobby') moving = null;
+    if (moving !== null && !lobby.seats[moving]?.id) moving = null;
+    $('#lobby-eyebrow').textContent = 'ODA · ' + roomSummary(lobby.difficulty);
     $('#lobby-code').textContent = lobby.code;
+    $('#lobby-visibility').textContent = lobby.private ? 'ÖZEL ODA · yalnız kodla' : 'AÇIK ODA · listede görünür';
+    const people = lobby.seats.filter(s => s.id).length;
     $('#lobby-mode').textContent =
-      (lobby.mode === 'pvp' ? 'PvP' : 'Co-op') +
-      " · 5'e 5 · Zorluk: " +
-      (DIFFICULTY_LABEL[lobby.difficulty] || 'Normal') +
-      '. Boş koltuğa tıklayıp takımını seç: herkes aynı takımdaysa co-op, iki takımda da oyuncu varsa PvP olur.' +
-      (lobby.private
-        ? ' Özel oda: açık odalar listesinde görünmez, yalnız kodla ya da linkle girilir.'
-        : ' Oda açık odalar listesinde görünür, isteyen katılabilir.');
+      people +
+      ' insan · ' +
+      (lobby.seats.length - people) +
+      ' bot · ' +
+      (lobby.mode === 'pvp' ? 'PvP: iki takımda da oyuncu var' : 'Co-op: herkes aynı takımda');
     for (const team of [0, 1]) {
       const root = $(team === 0 ? '#blue-seats' : '#red-seats');
       root.replaceChildren();
       for (const s of lobby.seats.filter(s => s.team === team)) {
-        const b = document.createElement('button');
-        b.className = 'seat' + (s.id === net.id ? ' me' : '');
+        const b = document.createElement('button'),
+          me = s.id === net.id;
+        b.className = 'seat' + (me ? ' me' : '') + (s.id ? '' : ' empty') + (moving === s.slot ? ' moving' : '');
         b.dataset.slot = s.slot;
-        b.disabled = !!s.id || lobby.state !== 'lobby';
-        b.textContent =
-          (s.id === net.id ? '● ' : '') +
-          s.name +
-          (s.id && !s.online ? ' · bağlantı koptu' : !s.id ? ' · boş koltuk' : '');
-        b.onclick = () => net.send('seat', { slot: s.slot });
+        b.disabled = lobby.state !== 'lobby' || (!!s.id && !isHost);
+        const name = document.createElement('span');
+        name.className = 'seat-name';
+        name.textContent = s.id ? s.name : 'Bot · boş koltuk';
+        b.append(name);
+        const tags = [];
+        if (s.id && s.id === lobby.host) tags.push('kuran');
+        if (me) tags.push('sen');
+        if (s.id && !s.online) tags.push('koptu');
+        for (const t of tags) {
+          const tag = document.createElement('small');
+          tag.className = 'seat-tag';
+          tag.textContent = t;
+          b.append(tag);
+        }
+        if (!s.id) b.insertAdjacentHTML('beforeend', '<em class="seat-sit">Buraya otur</em>');
+        b.onclick = () => seatClick(s);
+        if (isHost && s.id && lobby.state === 'lobby') {
+          b.draggable = true;
+          b.ondragstart = e => {
+            e.dataTransfer.setData('text/plain', String(s.slot));
+            e.dataTransfer.effectAllowed = 'move';
+          };
+        }
+        if (isHost && lobby.state === 'lobby') {
+          b.ondragover = e => {
+            e.preventDefault();
+            b.classList.add('drop');
+          };
+          b.ondragleave = () => b.classList.remove('drop');
+          b.ondrop = e => {
+            e.preventDefault();
+            b.classList.remove('drop');
+            const from = Number(e.dataTransfer.getData('text/plain'));
+            if (Number.isInteger(from) && from !== s.slot) net.send('move', { from, to: s.slot });
+          };
+        }
         root.append(b);
       }
     }
-    $('#lobby-start').hidden = lobby.host !== net.id;
-    $('#lobby-status').textContent =
-      lobby.host === net.id ? 'Boş koltukları botlar doldurur.' : 'Oda sahibinin başlatması bekleniyor.';
+    for (const b of document.querySelectorAll('[data-lobby-difficulty]')) {
+      b.classList.toggle('active', b.dataset.lobbyDifficulty === lobby.difficulty);
+      b.disabled = !isHost;
+    }
+    for (const b of document.querySelectorAll('[data-lobby-private]')) {
+      b.classList.toggle('active', (b.dataset.lobbyPrivate === '1') === !!lobby.private);
+      b.disabled = !isHost;
+    }
+    $('#lobby-start').disabled = !isHost;
+    $('#lobby-start').textContent = isHost ? 'MAÇI BAŞLAT ↗' : 'Kuranın başlatması bekleniyor';
+    $('#lobby-status').textContent = moving !== null ? 'Taşınacak koltuğa tıkla' : '';
     if (lobby.state === 'lobby') {
       game.started = false;
       show('lobby');
-    } else if (game.screen === 'results') $('#again').hidden = lobby.host !== net.id;
+    }
+  }
+  function seatClick(s) {
+    const net = game.net,
+      lobby = net.room;
+    if (!lobby || lobby.state !== 'lobby') return;
+    const isHost = lobby.host === net.id;
+    if (isHost && moving !== null) {
+      const from = moving;
+      moving = null;
+      if (from !== s.slot) net.send('move', { from, to: s.slot });
+      else renderLobby(lobby);
+      return;
+    }
+    if (!s.id) net.send('seat', { slot: s.slot });
+    else if (isHost) {
+      moving = s.slot;
+      renderLobby(lobby);
+    }
   }
 
   /** Maç karnesi: kazanan, süre ve oyuncu istatistikleri. */
@@ -141,44 +224,52 @@ export function createScreens(game, ui, input, actions) {
         )
         .join('') +
       '</tbody></table>';
-    $('#again').hidden = game.online && game.net.room?.host !== game.net.id;
+    // Çevrim içi: herkes LOBİYE DÖN (oda sunucuda lobiye döndü, kuran yeniden başlatır); tek başına: Yeni maç.
+    $('#again').hidden = false;
+    $('#again').textContent = game.online ? 'LOBİYE DÖN' : 'Yeni maç';
+    $('#result-home').textContent = game.online ? 'Odadan çık' : 'Ana menü';
   }
 
-  // Giriş ekranı
+  // Giriş ekranı (oda standardı §1): ADIN · tek başına seçimleri + TEK BAŞINA ↗ · ÇEVRİM İÇİ (HIZLI KATIL → / ODA KUR /
+  // ODAYA KATIL + kod satırı, durum) · AÇIK ODALAR. Oda kur hemen kurar (herkese açık, seçili zorlukla); özel/açık ve
+  // zorluk lobide kuranın ayarıdır.
   $('#solo').onclick = actions.startSolo;
-  $('#create').onclick = () => actions.connectAction('create', { difficulty, private: $('#private-room').checked });
+  $('#create').onclick = () => actions.connectAction('create', { difficulty }, 'Oda kuruluyor…');
   // Açık odalar: sunucu giriş ekranındakilere listeyi kendiliğinden gönderir (bkz. server/rooms.mjs). Satıra basan
   // kodsuz katılır; hızlı katıl en uygun odaya oturtur, yoksa seçili zorlukla herkese açık oda kurar.
-  $('#quick').onclick = () => actions.connectAction('quick', { difficulty });
+  $('#quick').onclick = () => actions.connectAction('quick', { difficulty }, 'Oda aranıyor…');
   function renderRooms(list) {
     const root = $('#room-list');
     root.replaceChildren();
+    $('#room-count').textContent = String(list.length);
     if (!list.length) {
       root.innerHTML = '<div class="rooms-empty">Şu an açık oda yok. Hızlı katıl yeni bir oda kurar.</div>';
       return;
     }
     for (const r of list) {
       const b = document.createElement('button'),
-        playing = r.state === 'playing';
+        playing = r.state === 'playing',
+        full = r.players >= r.seats;
       b.className = 'room-row';
       b.dataset.code = r.code;
+      b.disabled = full;
       b.innerHTML =
         '<span><b></b><small>' +
-        (r.mode === 'pvp' ? 'PvP' : 'Co-op') +
-        ' · ' +
-        escapeHtml(DIFFICULTY_LABEL[r.difficulty] || 'Normal') +
+        escapeHtml(roomSummary(r.difficulty)) +
         ' · ' +
         r.players +
         '/' +
         r.seats +
-        ' oyuncu · <i class="' +
-        (playing ? 'playing' : '') +
+        ' oyuncu</small></span><i class="room-state' +
+        (playing ? ' playing' : '') +
         '">' +
-        (playing ? 'Maç sürüyor' : 'Lobide bekliyor') +
-        '</i></small></span><em>KATIL →</em>';
+        (playing ? 'MAÇTA' : 'LOBİDE') +
+        '</i><em>' +
+        (full ? 'DOLU' : 'KATIL →') +
+        '</em>';
       b.querySelector('b').textContent = r.host || 'Oyuncu';
-      b.title = playing ? 'Maç sürüyor: boş koltuktaki botun yerine geçersin.' : 'Lobiye girersin, oda sahibi başlatır.';
-      b.onclick = () => actions.connectAction('join', { code: r.code });
+      b.title = playing ? 'Maç sürüyor: boş koltuktaki botun yerine geçersin.' : 'Lobiye girersin, kuran başlatır.';
+      b.onclick = () => actions.connectAction('join', { code: r.code }, 'Odaya bağlanıyor…');
       root.append(b);
     }
   }
@@ -189,14 +280,27 @@ export function createScreens(game, ui, input, actions) {
     $('#join-row').hidden = !$('#join-row').hidden;
     $('#room-code').focus();
   };
-  $('#join').onclick = () => actions.connectAction('join', { code: $('#room-code').value.trim().toUpperCase() });
+  $('#join').onclick = () => {
+    const code = normalizeCode($('#room-code').value);
+    $('#room-code').value = code;
+    if (code.replace(/[^A-Z]/g, '').length < 4) {
+      $('#home-status-message').textContent = 'Oda kodunu yaz';
+      return;
+    }
+    actions.connectAction('join', { code }, 'Odaya bağlanıyor…');
+  };
+  $('#room-code').oninput = e => {
+    const el = e.target,
+      up = el.value.toUpperCase();
+    if (up !== el.value) el.value = up;
+  };
   $('#room-code').onkeydown = e => {
     if (e.key === 'Enter') $('#join').click();
   };
-  // Sunucuya bağlanılamadıkça (kapalı ya da config.js → ONLINE ile kapatılmış) oda düğmeleri "Yakında" yazar ve basılmaz;
-  // sunucu kabul edince (main.js → net ready) açılır.
+  // Sunucuya bağlanılamadıkça (kapalı ya da config.js → ONLINE ile kapatılmış, ör. Android uygulaması) üç çevrim içi
+  // düğme kapalıdır ve "YAKINDA" yazar, açık oda listesi gizlenir; sunucu kabul edince (main.js → net ready) açılır.
   function setServer(up) {
-    for (const id of ['create', 'join-toggle', 'join']) {
+    for (const id of ['quick', 'create', 'join-toggle', 'join']) {
       const b = $('#' + id);
       b.disabled = !up;
       b.classList.toggle('soon', !up);
@@ -207,24 +311,28 @@ export function createScreens(game, ui, input, actions) {
         else if (up) tag?.remove();
       }
     }
-    // Açık odalar ve "Özel oda" seçeneği yalnız sunucu açıkken görünür (kapalıyken listelenecek bir şey yok).
-    $('#rooms').hidden = $('#private-row').hidden = !up;
+    $('#rooms').hidden = !up;
+    if (!up) $('#join-row').hidden = true;
   }
   setServer(false);
-  const code = onlineEnabled() && new URLSearchParams(location.search).get('oda');
-  if (code) {
-    $('#join-row').hidden = false;
-    $('#room-code').value = code;
-  }
-  // Lobi
+  // Davet linkiyle açılınca kod kutuya da yazılır (giriş main.js'te sunucuya bağlanır bağlanmaz kendiliğinden olur).
+  const code = onlineEnabled() && normalizeCode(new URLSearchParams(location.search).get('oda'));
+  if (code) $('#room-code').value = code;
+  // Lobi: kuranın ayarları, başlat, çık, link.
+  for (const b of document.querySelectorAll('[data-lobby-difficulty]'))
+    b.onclick = () => game.net.send('settings', { difficulty: b.dataset.lobbyDifficulty });
+  for (const b of document.querySelectorAll('[data-lobby-private]'))
+    b.onclick = () => game.net.send('settings', { private: b.dataset.lobbyPrivate === '1' });
   $('#lobby-start').onclick = () => game.net.send('start');
   $('#lobby-leave').onclick = actions.goHome;
   $('#copy-room').onclick = async () => {
-    const url = location.origin + '/?oda=' + game.net.room.code;
+    const url = inviteUrl(game.net.room.code),
+      b = $('#copy-room');
     paylasti(); // ölçüm: lobi linki paylaşıldı
     try {
       await navigator.clipboard.writeText(url);
-      $('#lobby-status').textContent = 'Katılma linki kopyalandı.';
+      b.textContent = 'Link kopyalandı';
+      setTimeout(() => (b.textContent = 'Linki kopyala'), 2000);
     } catch {
       $('#lobby-status').textContent = url;
     }
@@ -288,7 +396,12 @@ export function createScreens(game, ui, input, actions) {
       input.edges.floor = Number(b.dataset.floor);
     };
   $('#again').onclick = () => {
-    if (game.online) game.net.send('rematch');
+    if (game.online && game.net.room) {
+      game.started = false;
+      game.online = false;
+      show(null);
+      renderLobby({ ...game.net.room, state: 'lobby' });
+    } else if (game.online) actions.goHome();
     else actions.startSolo();
   };
 

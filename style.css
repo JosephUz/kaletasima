@@ -47,7 +47,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;font-size:12
 .home-content>p{font-size:15px;line-height:1.8;color:#c1d4c7;margin:0 0 26px}
 .home-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:440px}.home-form .field{margin-bottom:16px}
 .home-buttons{display:flex;gap:10px;align-items:stretch}.home-buttons button{padding:0 18px;font-weight:700}.home-buttons button small{font-weight:400;opacity:.7;font-size:11px;margin-left:6px}
-.home-buttons .primary{display:flex;align-items:center;justify-content:space-between;gap:30px;width:240px;min-height:54px;padding:0 22px;letter-spacing:1px}.home-buttons .primary span{font-size:22px}
+.home-buttons .primary,.solo-row .primary{display:flex;align-items:center;justify-content:space-between;gap:30px;width:240px;min-height:54px;padding:0 22px;letter-spacing:1px}.home-buttons .primary span,.solo-row .primary span{font-size:22px}
 .home #join-row{width:440px}
 .home-meta{display:flex;gap:27px;margin-top:17px;font-size:9px;letter-spacing:1.5px;color:#a9c0b3}.home-meta #home-online{margin-left:0;letter-spacing:0;font-size:11px}
 #home-status-message{margin:10px 0 0;min-height:1em;font-size:12px;color:#e4bf80}
@@ -57,7 +57,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;font-size:12
 @media(max-width:1100px){.home-top{left:20px;right:20px;top:calc(20px + var(--sp-top))}.home-actions kbd{display:none}.home-content{margin-left:5vw;width:450px}.home h2{font-size:50px}}
 /* Dar ekranda standart çubuk taşmasın: sıra ve dört düğme aynı kalır, yalnız yazılar kısalır
    (bağlantıda "josephuz.com" düşer, "←" kalır) ve oyun adı küçülür. */
-@media(max-width:650px){.home{background:#102d2bd9;align-items:flex-start;padding-top:calc(95px + var(--sp-top))}.home-top small{display:none}.home-top .badge{display:none}.home-top h1{font-size:15px}.home-actions{gap:6px}.home-actions .site-name{display:none}.home-actions button,.home-actions a.btn{padding:6px 7px;font-size:9px}.home-content{width:auto;margin:0 16px}.home h2{font-size:40px}.home-content>p{font-size:13px}.home-form,.home #join-row{grid-template-columns:1fr;width:auto}.home-buttons{flex-wrap:wrap}.home-buttons .primary{width:100%}.home-buttons button:not(.primary){flex:1;min-height:46px}.home-meta{flex-wrap:wrap;gap:12px 20px}.rule-cards{gap:16px}.home-note{display:none}}
+@media(max-width:650px){.home{background:#102d2bd9;align-items:flex-start;padding-top:calc(95px + var(--sp-top))}.home-top small{display:none}.home-top .badge{display:none}.home-top h1{font-size:15px}.home-actions{gap:6px}.home-actions .site-name{display:none}.home-actions button,.home-actions a.btn{padding:6px 7px;font-size:9px}.home-content{width:auto;margin:0 16px}.home h2{font-size:40px}.home-content>p{font-size:13px}.home-form,.home #join-row{grid-template-columns:1fr;width:auto}.home-buttons{flex-wrap:wrap}.home-buttons .primary,.solo-row .primary{width:100%}.home-buttons button:not(.primary){flex:1;min-height:46px}.home-meta{flex-wrap:wrap;gap:12px 20px}.rule-cards{gap:16px}.home-note{display:none}}
 
 /* Çevrim içi kapalıyken (uygulama) oda düğmeleri: sönük, "YAKINDA" etiketi. */
 .home-buttons button.soon{position:relative;opacity:.55;cursor:default}.home-buttons button.soon:hover{transform:none;background:#173938e8}
@@ -104,7 +104,7 @@ body.touch #claim{top:calc(110px + var(--sp-top))}
 /* Yatay telefonda üç oda düğmesi `.home-content` kutusuna sığmalı: kutu `overflow:auto` olduğu için taşan düğmenin
    merkezine dokunulamaz, dokunuş altındaki giriş ekranına gider (gece testi 2026-10-20, #join-toggle, iPhone 13
    yatay). Yazı küçülür, dolgu ve aralar incelir; daha da dar ekranda düğme yazısı sarar ama kutudan taşmaz. */
-.home-buttons{gap:8px}.home-buttons .primary{min-height:44px;width:auto;gap:12px;padding:0 14px}.home-buttons button{min-height:44px;min-width:0;font-size:13px;padding:0 12px}
+.home-buttons{gap:8px}.home-buttons .primary,.solo-row .primary{min-height:44px;width:auto;gap:12px;padding:0 14px}.home-buttons button{min-height:44px;min-width:0;font-size:13px;padding:0 12px}
 .home-meta{margin-top:10px}.rule-cards,.home-note{display:none}
 .overlay{padding:calc(10px + var(--sp-top)) 10px 10px}.card{padding:18px 22px;max-height:calc(var(--sp-h) * .94)}.card h2{font-size:22px;margin:0 0 12px}.help-columns{gap:12px}dl{gap:4px 10px;line-height:1.45;font-size:11px}.menu-buttons{gap:7px}.menu-buttons button,.menu-buttons a.btn{padding:10px 14px}
 }
@@ -156,21 +156,43 @@ body.touch .score-stack .score-values small::before{content:"♜";font-size:8px;
 body.touch .score-stack .score-values span{display:inline;margin:0;font-size:9px;font-weight:400}
 #claim-arrows>div{position:absolute;z-index:6;display:grid;place-items:center;pointer-events:none;transform:translate(-50%,-50%)}#claim-arrows i{font-style:normal;font-size:36px;line-height:1;color:var(--renk,#ffd23f);text-shadow:0 0 6px #000,0 0 2px #000}#claim-arrows small{margin-top:2px;padding:1px 7px;border-radius:8px;background:#000a;color:#ffe9a8;font-size:11px;font-weight:700;white-space:nowrap}
 
-/* Açık odalar (giriş ekranı, sunucu açıkken): herkese açık, boş koltuğu olan odalar; satıra basınca koltuğa oturulur.
-   "Özel oda" işaretliyse kurulan oda listede ve hızlı katılda görünmez. Liste en çok üç satır yüksekliğinde kayar. */
-.private-toggle{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#d6e2d4;cursor:pointer;width:max-content;max-width:100%}
-.private-toggle input{width:16px;height:16px;padding:0;margin:0;accent-color:#edc879;flex:0 0 auto}
-.private-toggle small{color:#9fb7aa;font-size:11px}
+/* Oda standardı (josephuz/docs/oda-standardi.md) — giriş ekranı: TEK BAŞINA ↗ satırı, altında ÇEVRİM İÇİ bölümü
+   (HIZLI KATIL → birincil, ODA KUR, ODAYA KATIL + kod satırı, durum satırı), en altta AÇIK ODALAR listesi. */
+.solo-row{display:flex;margin-bottom:18px}
+.online-block{width:440px;max-width:100%}
+.online-head{display:flex;align-items:center;gap:12px;margin-bottom:9px}.online-head #home-online{margin-left:0;font-size:11px}
+.online-block .home-buttons .primary{width:auto;gap:14px;min-height:50px;padding:0 18px}
+.online-block .home-buttons button:not(.primary){flex:1;min-height:50px}
+/* Açık odalar (giriş ekranı, sunucu açıkken): herkese açık odalar; satıra basınca boş koltuğa oturulur, dolu oda DOLU.
+   Liste en çok üç satır yüksekliğinde kayar. */
+.rooms-head .eyebrow b{margin-left:6px;padding:1px 7px;border-radius:9px;background:#edc87933;color:#ffe0a7;font-size:10px}
+.room-row .room-state{flex:0 0 auto;margin-left:auto;font-style:normal;font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 7px;border-radius:8px;background:#8fe08f22;color:#8fe08f}.room-row .room-state.playing{background:#ffd18022;color:#ffd180}
 #rooms{width:440px;margin-top:16px;padding:12px;background:#102d29cc;border:1px solid #9ebca433;border-radius:12px}
 .rooms-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
-#quick{padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1px;border-color:#edc87999;color:#ffe0a7}#quick span{margin-left:4px}
 #room-list{display:flex;flex-direction:column;gap:6px;max-height:186px;overflow-y:auto;scrollbar-width:thin}
 .room-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:9px 12px;min-height:54px;background:#173938e8}
 .room-row>span{min-width:0}.room-row b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .room-row small{display:block;margin-top:3px;font-size:11px;color:#a9c0b3}.room-row small i{font-style:normal;color:#8fe08f}.room-row small i.playing{color:#ffd180}
 .room-row em{flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:1px}
 .rooms-empty{padding:12px;font-size:12px;color:#a9c0b3;text-align:center;border:1px dashed #9ebca440;border-radius:9px}
-@media(max-width:650px){#rooms{width:auto}.private-toggle{width:auto}.private-toggle small{display:none}}
-@media(max-height:560px){#rooms{width:auto;margin-top:10px;padding:9px}#room-list{max-height:124px}.room-row{min-height:46px;padding:6px 10px}.private-toggle{margin-top:8px}}
+@media(max-width:650px){#rooms{width:auto}.online-block{width:auto}.online-block .home-buttons .primary{width:100%}}
+@media(max-height:560px){#rooms{width:auto;margin-top:10px;padding:9px}#room-list{max-height:124px}.room-row{min-height:46px;padding:6px 10px}.solo-row{margin-bottom:10px}.home h2,.home-content>p{display:none}.home-content>.eyebrow{margin-bottom:10px}.online-head{margin-bottom:6px}.online-block .home-buttons .primary,.online-block .home-buttons button:not(.primary){min-height:44px}}
 /* Yatay telefon: liste kaydırmanın altında kalmasın, sağdaki boş sahne alanında ayrı sütun olur. */
 @media(max-height:560px) and (min-width:700px){.home-content{width:min(470px,calc(95vw - 330px))}#rooms{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(62px + var(--sp-top));width:290px;margin:0;max-height:calc(100% - 78px - var(--sp-top));display:flex;flex-direction:column}#rooms[hidden]{display:none}#room-list{max-height:none;flex:1 1 auto;min-height:0}}
+
+/* Bekleme odası (oda standardı §6): göz ODA · özet, kod, görünürlük; koltukta ad + etiketler (kuran / sen / koptu);
+   boş koltuk "Bot · boş koltuk", üstüne gelince (dokunmatikte hep) "Buraya otur"; kuranın taşıdığı koltuk ve bırakma
+   hedefi vurgulu; ayarlar (Zorluk, ODA) kuranda açık, ötekilerde kapalı. */
+.lobby-visibility{display:block;margin-top:6px;font-size:10px;letter-spacing:1px;color:#a9c0b3}
+.seat{display:flex;align-items:center;gap:6px}.seat-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat-tag{flex:0 0 auto;padding:2px 6px;border-radius:7px;background:#edc87933;color:#ffe0a7;font-size:9px;font-weight:800;letter-spacing:.5px}
+.seat.empty .seat-name{color:#a9c0b3}.seat-sit{margin-left:auto;font-style:normal;font-size:10px;font-weight:800;color:#ffe0a7;opacity:0;transition:opacity .15s}
+.seat.empty:hover:not(:disabled) .seat-sit,.seat.empty:focus-visible .seat-sit,body.touch .seat.empty:not(:disabled) .seat-sit{opacity:1}
+.seat.moving{outline:2px dashed #edc879;outline-offset:2px}.seat.drop{background:#41655a}
+.seat[draggable=true]{cursor:grab}
+.lobby-settings{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.lobby-settings .field{margin-bottom:0;font-size:11px;letter-spacing:1px}
+.segmented.two{grid-template-columns:repeat(2,1fr)}.segmented button:disabled{opacity:.55}.segmented button.active:disabled{opacity:.8}
+#lobby-mode{margin:12px 0 0}
+#lobby .actions{flex-wrap:wrap}#lobby-start{min-width:0}
+@media(max-width:650px){.lobby-settings{grid-template-columns:1fr}.lobby-head{gap:10px;align-items:flex-start}}
+@media(max-height:560px){.lobby-settings{margin-top:8px;gap:10px}.lobby-settings .segmented button{padding:5px 0}.seat{min-height:36px;margin:5px 0}#lobby .actions{margin-top:12px}}

@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { DIFFICULTIES } from '../src/config.js';
 import { ACTIONS, sanitizeInput, snapshotFor } from '../src/net/snapshot.js';
 import { roomMode } from '../src/rules.js';
@@ -6,15 +6,28 @@ import { createWorld, step } from '../src/world.js';
 
 /**
  * Odalar ve lobi (sunucu). Her oda 10 koltukludur (5 mavi, 5 kırmızı); boş koltukları botlar doldurur. Mod seçilmez:
- * oyuncuların hepsi aynı takıma oturursa co-op, iki takımda da oyuncu varsa PvP olur (bkz. src/rules.js roomMode). Oda sahibi maçı başlatır; maç
+ * oyuncuların hepsi aynı takıma oturursa co-op, iki takımda da oyuncu varsa PvP olur (bkz. src/rules.js roomMode). Kuran maçı başlatır; maç
  * sürerken boş koltuğa katılınabilir, kopan oyuncuyu bot devralır ve 60 sn içinde aynı sekmeden dönerse koltuğuna oturur.
  * Simülasyon 30 Hz koşar, her oyuncuya kendi gördüğü durum 15 Hz gönderilir (bkz. src/net/snapshot.js).
  *
- * Açık oda listesi: odalar varsayılan herkese açıktır; "Özel oda" (create → private) listede ve hızlı katılda görünmez, yalnız
- * kodla / linkle girilir. Odada olmayan (giriş ekranındaki) bağlantılara liste `rooms` iletisiyle gider: bağlanınca, istenince
- * ve bir oda değişince (en çok saniyede bir, değişmediyse hiç). Hızlı katıl (`quick`) en dolu bekleyen odaya, yoksa sürmekte
- * olan bir maçın boş koltuğuna oturtur; uygun oda yoksa herkese açık yeni oda kurar.
+ * Oda standardı (josephuz/docs/oda-standardi.md): oda kodu `KPRT-4` biçimindedir (4 harf + tire + 1 rakam, benzersiz);
+ * `KPRT4` / küçük harf de kabul edilir. Oda kur (`create`) odayı hemen herkese açık kurar; kuran lobide zorluğu ve
+ * görünürlüğü (`settings` → difficulty / private) değiştirir, oyuncuları başka koltuğa taşır (`move`; dolu koltukta yer
+ * değiştirirler). Özel oda listede ve hızlı katılda görünmez, yalnız kodla / linkle girilir. Odada olmayan (giriş
+ * ekranındaki) bağlantılara liste `rooms` iletisiyle gider: bağlanınca, istenince ve bir oda değişince (~250 ms toplanır,
+ * değişmediyse hiç). Hızlı katıl (`quick`) en dolu bekleyen odaya, yoksa sürmekte olan bir maçın boş koltuğuna oturtur;
+ * uygun oda yoksa herkese açık yeni oda kurar. Maç bitince oda kendiliğinden lobiye döner (oyuncular karneden
+ * "LOBİYE DÖN" ile geçer), kuran yeniden başlatır.
  */
+export const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVYZ',
+  CODE_DIGITS = '23456789';
+/** Oda kodu girişi: büyük harf, boşluk / tire atılır, 4 harf + 1 rakamsa araya tire konur (`kprt4` → `KPRT-4`). */
+export function normalizeCode(text) {
+  const k = String(text || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  return /^[A-Z]{4}[0-9]$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4) : k;
+}
 export function createRooms() {
   const rooms = new Map(),
     clients = new Map();
@@ -40,15 +53,22 @@ export function createRooms() {
     for (const token of r.seats) send(clients.get(token), lobby(r));
     listChanged();
   };
-  // Açık oda listesi: herkese açık, bitmemiş, boş koltuğu olan ve içinde bağlı en az bir oyuncu bulunan odalar.
-  // Bekleyenler önce, sonra en kalabalık. Bitmiş maçın odası (karne ekranı) listelenmez.
+  // Açık oda listesi: herkese açık ve içinde bağlı en az bir oyuncu bulunan odalar (dolu oda "DOLU" diye görünür).
+  // Bekleyenler önce, sonra en kalabalık. Hızlı katıl yalnız boş koltuğu olanı seçer.
   const humans = r => r.seats.filter(Boolean).length;
-  const open = r =>
-    !r.private && r.state !== 'ended' && r.seats.some(t => !t) && r.seats.some(t => clients.get(t)?.ws);
+  const listed = r => !r.private && r.seats.some(t => clients.get(t)?.ws);
   const openRooms = () =>
     [...rooms.values()]
-      .filter(open)
+      .filter(listed)
       .sort((a, b) => (a.state === 'lobby' ? 0 : 1) - (b.state === 'lobby' ? 0 : 1) || humans(b) - humans(a));
+  function newCode() {
+    for (;;) {
+      let k = '';
+      for (let i = 0; i < 4; i++) k += CODE_LETTERS[randomInt(CODE_LETTERS.length)];
+      k += '-' + CODE_DIGITS[randomInt(CODE_DIGITS.length)];
+      if (!rooms.has(k)) return k;
+    }
+  }
   const roomList = () => ({
     type: 'rooms',
     list: openRooms()
@@ -63,7 +83,7 @@ export function createRooms() {
         seats: r.seats.length,
       })),
   });
-  // Değişince giriş ekranındakilere yay: en çok saniyede bir ve yalnız liste gerçekten değiştiyse.
+  // Değişince giriş ekranındakilere yay: ~250 ms toplanır, yalnız liste gerçekten değiştiyse.
   let listSent = '',
     listTimer = null;
   function listChanged() {
@@ -75,7 +95,7 @@ export function createRooms() {
       listSent = m;
       for (const c of clients.values())
         if (!c.room && c.ws?.readyState === 1 && c.ws.bufferedAmount < 256 * 1024) c.ws.send(m);
-    }, 1000);
+    }, 250);
     listTimer.unref?.();
   }
   // Çevrim içi sayısı: siteyi açan her sekme boşta bir bağlantı tutar (bkz. src/main.js). Değişince herkese, en çok 2 sn'de bir yayılır.
@@ -177,8 +197,11 @@ export function createRooms() {
         }
         r.world.events.length = 0;
       }
+      // Maç bitti: kazananlı son paket gitti; oda lobiye döner, kuran yeniden başlatır.
       if (r.world.winner !== null) {
-        r.state = 'ended';
+        r.world = null;
+        r.inputs = {};
+        r.state = 'lobby';
         broadcast(r);
       }
     }
@@ -186,6 +209,8 @@ export function createRooms() {
   timer.unref();
   return {
     stats: () => ({ rooms: rooms.size, online: onlineCount() }),
+    /** Yalnız testler: odanın iç durumu (ör. maçı bitirmek için winner yazılır). */
+    room: code => rooms.get(code),
     close: () => {
       clearInterval(timer);
       clearTimeout(onlineTimer);
@@ -226,7 +251,7 @@ export function createRooms() {
             };
             clients.set(c.token, c);
           }
-          send(c, { type: 'welcome', id: c.id, token: c.token });
+          send(c, { type: 'welcome', id: c.id, token: c.token, room: rooms.get(c.room)?.code || null });
           send(c, { type: 'online', n: onlineCount() });
           onlineChanged();
           if (!c.room) send(c, roomList());
@@ -259,17 +284,17 @@ export function createRooms() {
           c.name = m.name.trim().slice(0, 16);
         // Hızlı katıl: listenin başındaki oda (bekleyen, en kalabalık); yoksa herkese açık yeni oda.
         if (m.type === 'quick') {
-          const r = openRooms().find(r => r.code !== c.room);
+          const r = openRooms().find(r => r.code !== c.room && r.seats.some(t => !t));
           m = r ? { type: 'join', code: r.code } : { type: 'create', difficulty: m.difficulty };
         }
         if (m.type === 'create') {
           if (rooms.size >= 32) return error(c, 'Oda sınırına ulaşıldı.');
           leave(c);
-          const code = randomBytes(3).toString('hex').toUpperCase();
+          const code = newCode();
           const r = {
             code,
             difficulty: DIFFICULTIES.includes(m.difficulty) ? m.difficulty : 'normal',
-            private: m.private === true,
+            private: false,
             host: c.token,
             seats: Array(10).fill(null),
             state: 'lobby',
@@ -283,14 +308,14 @@ export function createRooms() {
           return;
         }
         if (m.type === 'join') {
-          const r = rooms.get(String(m.code || '').toUpperCase());
-          if (!r) return error(c, 'Oda bulunamadı.');
+          const r = rooms.get(normalizeCode(m.code));
+          if (!r) return error(c, 'Böyle bir oda yok');
           if (c.room === r.code) {
             broadcast(r);
             return;
           }
           const slot = r.seats.findIndex(t => !t);
-          if (slot < 0) return error(c, 'Bu odada boş oyuncu koltuğu yok.');
+          if (slot < 0) return error(c, 'Oda dolu');
           leave(c);
           occupy(r, c, slot);
           broadcast(r);
@@ -303,12 +328,27 @@ export function createRooms() {
           if (!Number.isInteger(m.slot) || !occupy(r, c, m.slot)) error(c, 'Bu koltuğa geçilemiyor.');
           else broadcast(r);
         }
-        if (m.type === 'start' && r.host === c.token && r.state === 'lobby') begin(r);
-        if (m.type === 'rematch' && r.host === c.token && r.state === 'ended') {
-          r.world = null;
-          r.state = 'lobby';
+        const host = r.host === c.token;
+        // Kuranın ayarları (yalnız lobide): zorluk ve görünürlük (herkese açık / özel).
+        if (m.type === 'settings' && host && r.state === 'lobby') {
+          if (DIFFICULTIES.includes(m.difficulty)) r.difficulty = m.difficulty;
+          if (typeof m.private === 'boolean') r.private = m.private;
           broadcast(r);
         }
+        // Kuran bir oyuncuyu başka koltuğa taşır; dolu koltuğa taşırsa ikisi yer değiştirir.
+        if (m.type === 'move' && host && r.state === 'lobby') {
+          const { from, to } = m,
+            ok = n => Number.isInteger(n) && n >= 0 && n < r.seats.length;
+          if (!ok(from) || !ok(to) || from === to || !r.seats[from]) return error(c, 'Bu koltuğa geçilemiyor.');
+          const a = r.seats[from],
+            b = r.seats[to];
+          r.seats[to] = a;
+          r.seats[from] = b;
+          clients.get(a).slot = to;
+          if (b) clients.get(b).slot = from;
+          broadcast(r);
+        }
+        if (m.type === 'start' && host && r.state === 'lobby') begin(r);
         if (m.type === 'input' && r.state === 'playing') {
           const next = sanitizeInput(m.input),
             old = r.inputs[c.slot]?.input;

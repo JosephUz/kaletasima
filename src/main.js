@@ -8,7 +8,7 @@ import { createMuzik } from './muzik.js';
 import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
 import { targetScore } from './rules.js';
-import { createScreens } from './screens.js';
+import { createScreens, normalizeCode } from './screens.js';
 import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { GameView } from './view/gameview.js';
@@ -120,7 +120,7 @@ export function start() {
     build(w);
     game.started = true;
     acc = 0;
-    if (yeniMac) macBasladi(); // ölçüm: çevrimdışı her başlatma, çevrimiçi ilk 'start' (rematch lobiden geçer, yine sayılır)
+    if (yeniMac) macBasladi(); // ölçüm: çevrimdışı her başlatma, çevrimiçi ilk 'start' (lobiye dönüp yeniden başlatılan maç da sayılır)
     screens.show(null);
     input.clear();
     ui.update();
@@ -129,10 +129,12 @@ export function start() {
   }
   function startSolo() {
     net.leave();
+    roomUrl(null);
     launch(createWorld(71, { names: [screens.nick()], difficulty: screens.difficulty() }));
   }
   function goHome() {
     net.leave();
+    roomUrl(null);
     game.online = false;
     game.started = false;
     latest = null;
@@ -191,15 +193,59 @@ export function start() {
     events(w.events || []);
   }
 
+  /**
+   * Oda standardı §5: odadayken adres çubuğu `?oda=KOD` gösterir, çıkınca silinir. Kod sekmede de saklanır
+   * (`kale.oda`): sayfa yenilenince jetonla aynı koltuğa dönülür; sunucu odayı unuttuysa kodla yeniden katılınır.
+   */
+  function roomUrl(code) {
+    try {
+      if (code) sessionStorage.setItem('kale.oda', code);
+      else sessionStorage.removeItem('kale.oda');
+    } catch {}
+    const u = new URL(location.href);
+    if ((u.searchParams.get('oda') || null) === code) return;
+    if (code) u.searchParams.set('oda', code);
+    else u.searchParams.delete('oda');
+    history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+  }
+  // Davet linki (?oda=KOD) ya da yenilenen sayfanın odası: bağlanır bağlanmaz kendiliğinden girilir.
+  let savedRoom = null;
+  try {
+    savedRoom = sessionStorage.getItem('kale.oda');
+  } catch {}
+  let pendingJoin = networked ? normalizeCode(new URLSearchParams(location.search).get('oda')) || savedRoom : null;
+  const homeStatus = text => ($('#home-status-message').textContent = text);
+  if (pendingJoin) homeStatus(pendingJoin === savedRoom ? 'Odaya geri bağlanıyor…' : 'Odaya bağlanıyor…');
+
   const net = new Network({
-    lobby: screens.renderLobby,
+    welcome: room => {
+      if (!room && net.room) {
+        // Sunucu odayı unuttu (yeniden başlatıldı): giriş ekranına dön, kodla yeniden katılmayı dene.
+        pendingJoin = pendingJoin || net.room.code;
+        net.room = null;
+        game.online = false;
+        game.started = false;
+        latest = null;
+        screens.show('home');
+      }
+      if (pendingJoin && pendingJoin !== room) net.send('join', { code: pendingJoin, name: screens.nick() });
+      else if (!pendingJoin && !room) homeStatus('');
+      pendingJoin = null;
+    },
+    lobby: m => {
+      roomUrl(m.code);
+      homeStatus('');
+      screens.renderLobby(m);
+    },
     rooms: screens.renderRooms,
     start: w => launch(w, true),
     snapshot: receive,
     error: message => {
       ui.toast(message);
-      $('#home-status-message').textContent = message;
+      homeStatus(message);
       $('#lobby-status').textContent = message;
+      // Linkle / yenilemeyle girilemeyen oda adres çubuğunda kalmasın.
+      if (!net.room) roomUrl(null);
     },
     status: message => {
       $('#net-status').textContent = message;
@@ -216,15 +262,15 @@ export function start() {
     },
   });
   game.net = net;
-  async function connectAction(type, body) {
+  /** Çevrim içi düğmeler: durum satırı (`Oda aranıyor…` / `Oda kuruluyor…` / `Odaya bağlanıyor…`) lobi gelince ya da hata olunca değişir. */
+  async function connectAction(type, body, statusText = 'Odaya bağlanıyor…') {
     if (!networked) return;
-    $('#home-status-message').textContent = 'Bağlanıyor…';
+    homeStatus(statusText);
     try {
       await net.connect(screens.nick());
       net.send(type, { ...body, name: screens.nick() });
-      $('#home-status-message').textContent = '';
     } catch (e) {
-      $('#home-status-message').textContent = e.message;
+      homeStatus(e.message);
     }
   }
 

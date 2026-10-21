@@ -8,7 +8,8 @@ import { serverUrl } from '../platform.js';
  *
  * Giriş ekranındayken sunucu açık oda listesini (`rooms`) kendiliğinden gönderir: bağlanınca, odadan çıkınca, liste değişince.
  *
- * hooks: lobby(m), start(world), snapshot(world), error(message), status(message), online(n), ready(up), rooms(list)
+ * hooks: welcome(room), lobby(m), start(world), snapshot(world), error(message), status(message), online(n), ready(up), rooms(list)
+ * welcome(room): sunucunun bu jetonla bildiği oda kodu (yenilenen sayfa aynı koltuğa döner) ya da null.
  */
 export class Network {
   constructor(hooks) {
@@ -52,6 +53,7 @@ export class Network {
           resolve();
           this.hooks.status?.('');
           this.hooks.ready?.(true);
+          this.hooks.welcome?.(m.room || null);
         } else if (m.type === 'lobby') {
           this.room = m;
           this.hooks.lobby(m);

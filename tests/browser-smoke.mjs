@@ -181,10 +181,10 @@ try {
   const c2 = await browser.newContext({ viewport: { width: 1280, height: 800 } }),
     guest = await c2.newPage();
   guest.on('pageerror', e => errors.push(e.message));
-  await guest.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&oda=' + code);
-  await guest.locator('#nickname').fill('Rakip');
-  await guest.locator('#join').click();
+  // Davet linki: sunucuya bağlanır bağlanmaz odaya kendiliğinden girilir, adres çubuğunda ?oda kalır.
+  await guest.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&oda=' + code.replace('-', ''));
   await guest.locator('#lobby').waitFor({ state: 'visible' });
+  assert.ok(guest.url().includes('oda=' + code));
   await guest.locator('#red-seats .seat:not([disabled])').first().click();
   await guest.waitForTimeout(100);
   await page.bringToFront();
@@ -207,7 +207,7 @@ try {
   await page.locator('#create').click();
   await page.locator('#lobby').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#red-seats .seat:not([disabled])').count(), 5);
-  assert.match(await page.locator('#lobby-mode').innerText(), /^Co-op/);
+  assert.match(await page.locator('#lobby-mode').innerText(), /^1 insan · 9 bot · Co-op/);
   await page.screenshot({ path: 'artifacts/11-room-lobby.png' });
   assert.deepEqual(errors, []);
   console.log(

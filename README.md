@@ -20,20 +20,32 @@ Konteyner adı `kale-tasima`; otomatik yeniden başlatma ve `/health` sağlık k
 - **Oda kur:** 5 maviye karşı 5 kırmızı, 10 koltuk. Mod seçilmez; oyuncular istedikleri koltuğa oturur, boş koltuklar bottur.
   Oyuncuların hepsi aynı takımdaysa **Co-op** (botlara karşı birlikte), iki takımda da oyuncu varsa **PvP** olur. Lobide o
   anki mod görünür; maç sürerken karşı takıma katılan olursa maç PvP'ye döner. Kaça kaç seçimi yoktur.
-- **Açık odalar / Hızlı katıl:** odalar varsayılan herkese açıktır ve giriş ekranındaki listede görünür (oda sahibi, mod,
-  zorluk, n/10 oyuncu, "Lobide bekliyor" ya da "Maç sürüyor"); satıra basan kodsuz katılır. Hızlı katıl en kalabalık bekleyen
-  odaya, yoksa sürmekte olan maçın boş koltuğuna oturtur, o da yoksa seçili zorlukla yeni oda kurar. **Özel oda** işaretlenerek
-  kurulan oda listede ve hızlı katılda görünmez, yalnız kodla / linkle girilir. Dolu, bitmiş ve bağlı oyuncusu kalmamış odalar
-  listelenmez. Sunucu listeyi (`rooms`) giriş ekranındaki bağlantılara bağlanınca, odadan çıkınca ve liste değişince
-  (en çok saniyede bir) kendisi gönderir; testi: `tests/oda-listesi.test.mjs`.
+- **Oda akışı** bütün JosephUz oyunlarındaki oda standardına uyar (`josephuz/docs/oda-standardi.md`). Giriş ekranı sırası:
+  **ADIN** · Bot zorluğu + **TEK BAŞINA ↗** · **ÇEVRİM İÇİ** (`● N çevrim içi`): **HIZLI KATIL →**, **ODA KUR**, **ODAYA KATIL**
+  (altında `ODA KODU` + **KATIL**, Enter de katılır), durum satırı · **AÇIK ODALAR** listesi. Sunucuya bağlanılamazken (ya da
+  Android uygulamasında, `ONLINE.app = false`) üç düğme **YAKINDA** yazar, liste gizlenir.
+- **Oda kur** odayı hemen, ana ekrandaki zorlukla ve herkese açık kurar; kuran lobide **Zorluk** ve **ODA: Herkese açık / Özel**
+  ayarlarını değiştirir (ötekilerde kapalı görünür). Özel oda listede ve hızlı katılda görünmez, yalnız kodla / linkle girilir.
+- **Oda kodu** `KPRT-4` biçimindedir (4 harf `ABCDEFGHJKLMNPRSTUVYZ` + tire + 1 rakam `23456789`, benzersiz); `kprt4` yazılırsa
+  `KPRT-4` olur. Davet linki `https://kaletasima.josephuz.com/?oda=KPRT-4` açılınca sunucuya bağlanır bağlanmaz odaya girilir;
+  odadayken adres çubuğu `?oda=KOD` gösterir, çıkınca silinir. Sayfa yenilenirse sekmedeki jetonla (`kale.token`, oda kodu
+  `kale.oda`) aynı koltuğa dönülür. Hatalar: `Böyle bir oda yok`, `Oda dolu`.
+- **Açık odalar / Hızlı katıl:** satırda kuranın adı, `5v5 · Zorluk · n/10 oyuncu`, **LOBİDE** / **MAÇTA** ve **KATIL →** (dolu
+  odada **DOLU**); satıra basan kodsuz katılır. Hızlı katıl en kalabalık bekleyen odaya, yoksa sürmekte olan maçın boş koltuğuna
+  oturtur, o da yoksa seçili zorlukla herkese açık yeni oda kurar. Sunucu listeyi (`rooms`) giriş ekranındaki bağlantılara
+  bağlanınca, odadan çıkınca ve liste değişince (~250 ms toplanır) kendisi gönderir; testi: `tests/oda-listesi.test.mjs`.
+- **Bekleme odası:** `ODA · 5v5 · Zorluk`, kod, **Linki kopyala**, `AÇIK ODA · listede görünür` / `ÖZEL ODA · yalnız kodla`;
+  koltuklarda `kuran` / `sen` / `koptu`, boş koltuk `Bot · boş koltuk` (`Buraya otur`). Kuran bir oyuncuyu sürükleyip başka
+  koltuğa bırakır ya da oyuncuya sonra koltuğa tıklar; dolu koltukta yer değiştirirler. `N insan · M bot` ve Co-op / PvP notu;
+  kuranda **MAÇI BAŞLAT ↗**, ötekilerde `Kuranın başlatması bekleniyor`; **Odadan çık**.
 - On kişilik modlarda daha geniş bir çember vardır; mavi ve kırmızı kaleler dönüşümlü dizilir. Bütün kapılar merkeze bakar.
 
-**Bot zorluğu** giriş ekranında seçilir (Kolay / Normal / Zor, varsayılan Normal; tarayıcı hatırlar). Çevrim içi odada oda kuranın seçimi geçerlidir ve lobide görünür.
+**Bot zorluğu** giriş ekranında seçilir (Kolay / Normal / Zor, varsayılan Normal; tarayıcı hatırlar). Çevrim içi odada başlangıç zorluğudur; kuran lobide değiştirir.
 
 - Kolay ve Normal: botlar eşyalarını (başlangıç, satın alınan, taşınan) hep 1. kata koyar.
 - Zor: botlar eşyalarını üç kata dağıtır; botun altın ağacı vuruşu 2 yerine 4 altın düşürür (oyuncular için 2).
 
-Oda sahibi maçı başlatır. Oda kodu veya katılma linkiyle girilir; maç devam ederken boş koltuğa katılmak da mümkündür. Kopan oyuncuyu bot devralır; 60 saniye içinde aynı sekmeden yeniden bağlanırsa koltuğuna döner. Oda sahibi ayrılırsa yetki diğer bağlı oyuncuya geçer. Maç sonunda sahibi yeni maç için lobiye dönebilir.
+Kuran maçı başlatır. Maç devam ederken odaya (kodla, linkle, listeden, hızlı katılla) gelen doğrudan maça girer, bir botun koltuğunu alır. Kopan oyuncuyu bot devralır; 60 saniye içinde aynı sekmeden yeniden bağlanırsa koltuğuna döner. Kuran ayrılırsa kuranlık sıradaki bağlı oyuncuya geçer. Esc menüsünde çevrim içiyken **Odadan çık** yazar. Maç bitince oda sunucuda kendiliğinden lobiye döner; karnede çevrim içiyken herkes **LOBİYE DÖN** ile bekleme odasına geçer, kuran yeniden başlatır (tek başınayken **Yeni maç**).
 
 ## Telefon ve Android
 

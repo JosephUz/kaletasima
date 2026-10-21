@@ -1,4 +1,4 @@
-// Giriş ekranındaki üç oda düğmesi (TEK BAŞINA / Oda kur / Odaya katıl) `.home-content` kutusunun içinde kalmalı:
+// Giriş ekranındaki üç çevrim içi oda düğmesi (HIZLI KATIL → / ODA KUR / ODAYA KATIL) `.home-content` kutusunun içinde kalmalı:
 // kutu `overflow:auto` olduğu için taşan düğmenin merkezine dokunulamaz, dokunuş altındaki `section#home`e gider.
 // Gece testi 2026-10-20: iPhone 13 yatayda (844x390) `button#join-toggle` böyle örtülüydü (iz da484a27ba70).
 // Playwright ister (bkz. tests/duzen.test.mjs); yoksa test atlanır.

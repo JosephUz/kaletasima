@@ -92,7 +92,7 @@ try {
   assert.equal(snap.world.players.filter(p => !p.bot).length, 10);
   const extra = await client('Extra');
   extra.send('join', { code: lobby.code });
-  assert.match((await extra.next('error')).message, /boş/);
+  assert.equal((await extra.next('error')).message, 'Oda dolu');
   a.send('leave');
   const migrated = await back.next('lobby', m => m.host !== a.welcome.id);
   assert.ok(migrated.host);
