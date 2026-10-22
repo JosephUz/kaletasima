@@ -18,7 +18,7 @@ try {
   page.on('console', e => {
     if (e.type() === 'error') errors.push(e.text());
   });
-  await page.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1');
+  await page.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&dil=tr');
   await page.waitForFunction(() => !!window.__kaleTasima);
   await page.screenshot({ path: 'artifacts/01-home.png' });
   assert.equal(await page.locator('#nickname').inputValue(), 'Kale Taşımacılık');
@@ -182,7 +182,7 @@ try {
     guest = await c2.newPage();
   guest.on('pageerror', e => errors.push(e.message));
   // Davet linki: sunucuya bağlanır bağlanmaz odaya kendiliğinden girilir, adres çubuğunda ?oda kalır.
-  await guest.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&oda=' + code.replace('-', ''));
+  await guest.goto((process.env.GAME_URL || 'http://127.0.0.1:5185') + '/?test=1&dil=tr&oda=' + code.replace('-', ''));
   await guest.locator('#lobby').waitFor({ state: 'visible' });
   assert.ok(guest.url().includes('oda=' + code));
   await guest.locator('#red-seats .seat:not([disabled])').first().click();

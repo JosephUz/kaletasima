@@ -1,5 +1,6 @@
 import { allied, nearStairs, roomAt, visibleTo } from './castle.js';
-import { DIFFICULTY_LABEL, RULES, TEAM_COLORS } from './config.js';
+import { DIFFICULTIES, RULES, TEAM_COLORS } from './config.js';
+import { DIL, t } from './dil.js';
 import { $, escapeHtml } from './html.js';
 import { nearClubCrate } from './items.js';
 import { castleInvaded, countItems, dist, inside, targetScore } from './rules.js';
@@ -12,7 +13,7 @@ export function createUI(game) {
   let toastLeft = 0,
     audioCtx;
   const hero = () => game.world.players[game.world.me || 0];
-  const teamName = team => (team === 0 ? 'Mavi takım' : 'Kırmızı takım');
+  const teamName = team => t(team === 0 ? 'lobi.mavi' : 'lobi.kirmizi');
 
   function toast(text) {
     $('#toast').textContent = text;
@@ -62,12 +63,12 @@ export function createUI(game) {
 
   function contextHint(p, own) {
     if (game.screen) return '';
-    if (p.stun > 0) return 'Kalende ayılmana ' + p.stun.toFixed(1) + ' sn · Sol tıkla karşılık ver';
-    if (!p.hasClub && nearClubCrate(game.world, p)) return 'E · Kasadan sopa al';
-    if (p.held !== null) return inside(p, own) ? 'E · Buraya sakla' : 'E · Eşyayı bırak';
-    if (nearest()) return 'E · Eşyayı al';
-    if (!p.hasClub) return 'Sopan yok · En yakın kale kapısındaki kasaya git';
-    if (Math.hypot(p.x, p.z) < 4) return 'Sol tık · Altın ağacına vur';
+    if (p.stun > 0) return t('ipucu.baygin', { sn: p.stun.toFixed(1) });
+    if (!p.hasClub && nearClubCrate(game.world, p)) return t('ipucu.sopaAl');
+    if (p.held !== null) return t(inside(p, own) ? 'ipucu.sakla' : 'ipucu.birak');
+    if (nearest()) return t('ipucu.al');
+    if (!p.hasClub) return t('ipucu.sopaYok');
+    if (Math.hypot(p.x, p.z) < 4) return t('ipucu.agac');
     return '';
   }
 
@@ -80,32 +81,34 @@ export function createUI(game) {
     $('#gold').textContent = p.gold || 0;
     const hp = Math.max(0, Math.min(RULES.hp, p.hp ?? RULES.hp));
     $('#hearts').innerHTML = '♥'.repeat(hp) + '<i>' + '♥'.repeat(RULES.hp - hp) + '</i>';
-    $('#home-count').innerHTML = n + ' <small>eşya</small>';
+    $('#home-count').innerHTML = n + ' <small>' + t('oyun.esyaKucuk') + '</small>';
     $('#home-bar').style.width = Math.min(100, (total / targetScore(w)) * 100) + '%';
     $('#team-count').textContent =
-      w.mode === 'solo' ? 'Hedef: ' + n + ' / ' + targetScore(w) : 'Takım toplamı: ' + total + ' / ' + targetScore(w);
-    $('#home-status').textContent = castleInvaded(w, p.id) ? 'RAKİP İÇERİDE' : p.stun > 0 ? 'KORUMASIZ' : '';
+      w.mode === 'solo'
+        ? t('oyun.hedef', { n, h: targetScore(w) })
+        : t('oyun.takimToplam', { n: total, h: targetScore(w) });
+    $('#home-status').textContent = castleInvaded(w, p.id) ? t('oyun.rakipIceride') : p.stun > 0 ? t('oyun.korumasiz') : '';
     $('#home-status').style.color = '#ffb08a';
     $('#buy').disabled = !game.started || !!game.screen || p.stun > 0 || !inside(p, own) || p.gold < RULES.price;
-    $('#buy-hint').textContent = inside(p, own) ? 'B · 15 altına bir eşya' : 'Satın almak için kalene dön.';
+    $('#buy-hint').textContent = t(inside(p, own) ? 'oyun.satinAl' : 'oyun.kaleneDon');
     $('#mode-label').textContent =
-      (w.mode === 'solo' ? 'Tek başına · 5 oyuncu' : (w.mode === 'coop' ? 'Co-op' : 'PvP') + ' · 5v5') +
+      (w.mode === 'solo' ? t('oyun.modTek') : (w.mode === 'coop' ? 'Co-op' : 'PvP') + ' · 5v5') +
       ' · ' +
-      (DIFFICULTY_LABEL[w.difficulty] || 'Normal');
+      t(DIFFICULTIES.includes(w.difficulty) ? 'zorluk.' + w.difficulty : 'zorluk.normal');
     $('#match-clock').textContent =
       String(Math.floor(w.time / 60)).padStart(2, '0') + ':' + String(Math.floor(w.time % 60)).padStart(2, '0');
     $('#team-card').hidden = w.mode === 'solo';
     if (!$('#score-panel').hidden && w.mode !== 'solo') {
-      $('#team-target').textContent = 'HEDEF ' + targetScore(w);
+      $('#team-target').textContent = t('oyun.hedefUst', { n: targetScore(w) });
       $('#teams').innerHTML = [0, 1]
-        .map(t => {
-          const score = teamScore(t);
+        .map(takim => {
+          const score = teamScore(takim);
           return (
             '<div class="team-total"><div><b style="color:' +
-            TEAM_COLORS[t] +
+            TEAM_COLORS[takim] +
             '">' +
-            teamName(t) +
-            (t === p.team ? '<span>sen</span>' : '') +
+            teamName(takim) +
+            (takim === p.team ? '<span>' + t('lobi.sen') + '</span>' : '') +
             '</b><strong>' +
             score +
             ' <small>/ ' +
@@ -113,7 +116,7 @@ export function createUI(game) {
             '</small></strong></div><div class="team-bar"><i style="width:' +
             Math.min(100, (score / targetScore(w)) * 100) +
             '%;background:' +
-            TEAM_COLORS[t] +
+            TEAM_COLORS[takim] +
             '"></i></div></div>'
           );
         })
@@ -130,9 +133,11 @@ export function createUI(game) {
             escapeHtml(v.name) +
             '</div><strong class="score-values">' +
             countItems(w, v.id) +
-            ' <small>eşya</small><span>' +
-            (v.gold || 0) +
-            ' altın</span></strong></div>',
+            ' <small>' +
+            t('oyun.esyaKucuk') +
+            '</small><span>' +
+            t('oyun.altinSay', { n: v.gold || 0 }) +
+            '</span></strong></div>',
         )
         .join('');
     const invaded = game.started && !game.screen && w.winner === null && castleInvaded(w, p.id);
@@ -140,11 +145,12 @@ export function createUI(game) {
     $('#castle-alert-text').hidden = !invaded;
     const loc = roomAt(w, p);
     $('#location').textContent = loc
-      ? loc.floor +
-        1 +
-        '. KAT · ' +
-        (loc.base === p.id ? 'SENİN KALEN' : w.players[loc.base].name.toLocaleUpperCase('tr-TR') + ' KALESİ')
-      : 'DIŞ ALAN';
+      ? t('oyun.kat', { n: loc.floor + 1 }) +
+        ' · ' +
+        (loc.base === p.id
+          ? t('oyun.seninKalen')
+          : t('oyun.kalesi', { ad: w.players[loc.base].name.toLocaleUpperCase(DIL === 'tr' ? 'tr-TR' : 'en-US') }))
+      : t('oyun.disAlan');
     $('#stairs').hidden = !(game.started && !game.screen && nearStairs(w, p));
     for (const b of document.querySelectorAll('[data-floor]')) {
       b.disabled = Number(b.dataset.floor) === (p.floor || 0);
@@ -154,26 +160,22 @@ export function createUI(game) {
     const banner = $('#state-banner');
     banner.hidden = !game.started || !!game.screen || !(p.stun > 0);
     if (p.stun > 0) {
-      banner.querySelector('b').textContent = 'BAYGINSIN · ' + Math.ceil(p.stun) + ' sn';
-      banner.querySelector('span').textContent = 'Kalen korumasız · Süre bitince kalende sopayla doğacaksın';
+      banner.querySelector('b').textContent = t('oyun.bayginsin', { n: Math.ceil(p.stun) });
+      banner.querySelector('span').textContent = t('oyun.korumasizMetin');
       banner.querySelector('i').style.width =
         Math.min(100, (p.stun / Math.max(p.stunTotal || RULES.stun, 1)) * 100) + '%';
     }
     $('#claim').hidden = w.claimant === null || !game.started || game.screen === 'results';
     if (w.claimant !== null) {
       const winner = w.players[w.claimant];
-      $('#claim').textContent =
-        (w.mode === 'solo' ? winner.name : teamName(winner.team)) +
-        ' kazanıyor · ' +
-        Math.max(0, Math.ceil(RULES.winHold - w.claimTime)) +
-        ' sn · Hazinesini çal!';
+      $('#claim').textContent = t('oyun.kazaniyor', {
+        kim: w.mode === 'solo' ? winner.name : teamName(winner.team),
+        n: Math.max(0, Math.ceil(RULES.winHold - w.claimTime)),
+      });
     }
-    $('#quality').textContent = 'Grafik: ' + ['Düşük', 'Orta', 'Yüksek'][game.quality];
+    $('#quality').textContent = t('menu.grafik', { q: t(`grafik.${game.quality}`) });
     $('#perf').textContent =
-      Math.round(game.fps) +
-      ' FPS · ' +
-      game.view.renderer.info.render.calls +
-      ' çizim' +
+      t('menu.perf', { fps: Math.round(game.fps), cizim: game.view.renderer.info.render.calls }) +
       (game.online ? ' · ' + game.net.rtt + ' ms' : '');
   }
 

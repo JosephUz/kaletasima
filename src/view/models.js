@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { walls } from '../castle.js';
 import { CASTLE } from '../config.js';
+import { t } from '../dil.js';
 import { dist } from '../rules.js';
 
 /**
@@ -51,7 +52,7 @@ export const modelMethods = {
       this.ball(0.19, '#ffe28a', Math.sin(a) * 1.8, 3.2 + (n % 3) * 0.3, Math.cos(a) * 1.8);
     }
     const fountain = { visible: true, position: new T.Vector3(0, 0, 0), getWorldPosition: out => out.set(0, 0, 0) };
-    this.label(fountain, 2.2, 'market', 'ALTIN AĞACI');
+    this.label(fountain, 2.2, 'market', t('gorunum.agac'));
     let seed = 34;
     const random = () => {
       seed = (seed * 1664525 + 1013904223) >>> 0;

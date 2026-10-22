@@ -1,4 +1,5 @@
 import { COLORS, CASTLE } from '../config.js';
+import { t } from '../dil.js';
 
 /** Efektler (GameView metotları olarak eklenir): parçacık patlamaları, uçan yazılar ve oyun olaylarının görüntüsü. */
 export const effectMethods = {
@@ -34,7 +35,13 @@ export const effectMethods = {
     if (e.type === 'hit') {
       this.burst(e.x, 1.1, e.z, '#ffdc8c', 9);
       this.floating(
-        e.extend ? '+' + e.extend + ' SN' : e.extend === 0 ? 'EN ÇOK 30 SN' : e.hp != null ? '-1 CAN' : 'PAT!',
+        e.extend
+          ? t('efekt.sn', { n: e.extend })
+          : e.extend === 0
+            ? t('efekt.enCok')
+            : e.hp != null
+              ? t('efekt.can')
+              : t('efekt.pat'),
         e.x,
         e.z,
       );
@@ -42,21 +49,21 @@ export const effectMethods = {
     }
     if (e.type === 'stairs') {
       const p = this.world.players[e.player];
-      this.floating((e.to > e.from ? '↑ ' : '↓ ') + (e.to + 1) + '. KAT', p.x, p.z);
+      this.floating((e.to > e.from ? '↑ ' : '↓ ') + t('oyun.kat', { n: e.to + 1 }), p.x, p.z);
     }
     if (e.type === 'knockout') {
       this.burst(e.x, 1.4, e.z, '#ff7d6e', 18);
-      this.floating(e.gold ? 'NAKAVT! -' + e.gold + ' ALTIN' : 'NAKAVT!', e.x, e.z);
+      this.floating(e.gold ? t('efekt.nakavtAltin', { n: e.gold }) : t('efekt.nakavt'), e.x, e.z);
       if (e.victim === 0) this.shake = 0.3;
     }
     if (e.type === 'stun') {
       this.burst(e.x, 1.7, e.z, '#ffdd7e', 15);
-      this.floating(e.gold ? 'SERSEM! -' + e.gold + ' ALTIN' : 'SERSEM!', e.x, e.z);
+      this.floating(e.gold ? t('efekt.sersemAltin', { n: e.gold }) : t('efekt.sersem'), e.x, e.z);
       if (e.victim === 0) this.shake = 0.25;
     }
     if (e.type === 'deposit' || e.type === 'buy') {
       this.burst(e.x, 1, e.z, '#ffdc87', 18);
-      this.floating('+1 EŞYA', e.x, e.z);
+      this.floating(t('efekt.esya'), e.x, e.z);
     }
     if (e.type === 'respawn') {
       this.burst(e.x, 1, e.z, COLORS[e.player], 20);

@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { allied, roomAt, visibleTo } from '../castle.js';
 import { CASTLE, ISO, RULES } from '../config.js';
+import { DIL, t } from '../dil.js';
 import { escapeHtml, setHtml } from '../html.js';
 import { countItems, dist } from '../rules.js';
 import { effectMethods } from './effects.js';
@@ -301,12 +302,16 @@ export class GameView {
         '<b style="color:' +
           this.world.players[b.id].color +
           '">' +
-          (b.id === hero.id ? 'SENİN KALE' : escapeHtml(w.players[b.id].name.toLocaleUpperCase('tr-TR'))) +
+          (b.id === hero.id
+            ? t('oyun.seninKale')
+            : escapeHtml(w.players[b.id].name.toLocaleUpperCase(DIL === 'tr' ? 'tr-TR' : 'en-US'))) +
           '</b> · ' +
           n +
           '/' +
           RULES.target +
-          '<span>3 KAT</span>',
+          '<span>' +
+          t('gorunum.ucKat') +
+          '</span>',
       );
     }
   }
@@ -344,8 +349,8 @@ export class GameView {
           '">' +
           escapeHtml(p.name) +
           '</span>' +
-          (p.stun > 0 ? '<span class="stun-text">✦ ' + p.stun.toFixed(1) + ' sn</span>' : '') +
-          (p.id === hero.id && !p.hasClub ? '<span class="unarmed">SOPA YOK · KAPIDAKİ KASADAN AL</span>' : ''),
+          (p.stun > 0 ? '<span class="stun-text">' + t('gorunum.sn', { n: p.stun.toFixed(1) }) + '</span>' : '') +
+          (p.id === hero.id && !p.hasClub ? '<span class="unarmed">' + t('gorunum.sopaYok') + '</span>' : ''),
       );
     }
   }

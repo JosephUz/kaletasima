@@ -1,13 +1,14 @@
 import { allied } from './castle.js';
 import { ISO } from './config.js';
+import { t } from './dil.js';
 import { createTouch, TOUCH } from './touch.js';
 
 /** Dokunmatik düğmeler (sağ alt): VUR basılı tutulunca vurmaya devam eder (sol tık basılı gibi). */
 const BUTTONS = [
-  { id: 'hit', label: 'VUR', sub: 'TUT: SÜREKLİ', cls: 'big' },
-  { id: 'throw', label: 'FIRLAT' },
-  { id: 'grab', label: 'TAŞI', sub: 'AL / BIRAK' },
-  { id: 'jump', label: 'ZIPLA', sub: 'HAVADA ×2' },
+  { id: 'hit', label: t('dokun.vur'), sub: t('dokun.vurAlt'), cls: 'big' },
+  { id: 'throw', label: t('dokun.firlat') },
+  { id: 'grab', label: t('dokun.tasi'), sub: t('dokun.tasiAlt') },
+  { id: 'jump', label: t('dokun.zipla'), sub: t('dokun.ziplaAlt') },
 ];
 
 /**

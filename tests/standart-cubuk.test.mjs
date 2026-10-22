@@ -1,7 +1,8 @@
 // STANDART üst araç çubuğu ve duraklatma (Esc) menüsü — bütün JosephUz oyunlarında aynı olmalı (Yusuf, 3 Ekim):
-//   çubuk: `← josephuz.com` · `Ses: açık/kapalı` · `Müzik: açık/kapalı` · `Kontroller F1`
+//   çubuk: `← josephuz.com` · `Ses: açık/kapalı` · `Müzik: açık/kapalı` · `Kontroller F1` · dil (`EN` / `TR`)
 //   menü:  `DEVAM ET →` · `Kontroller F1` · `Ses: …` · `Müzik: …` (+ ses sürgüsü) · [oyuna özgü] · `Ana menü` ·
-//          `josephuz.com'a dön`
+//          `josephuz.com'a dön` (dil düğmesi yok)
+// Yazılar dil standardı gereği src/diller/tr.js'tedir; HTML'deki öğe data-i18n anahtarını taşır.
 //
 // Burada iki şey denetlenir:
 //   1. Sıra, yazılar ve saklanan ayar — kaynaktan, tarayıcısız.
@@ -18,26 +19,34 @@ import { fileURLToPath } from 'node:url';
 import { playwrightYukle } from './playwright-bul.mjs';
 import { sunucuAc, tarayiciAyari } from './yerel-sunucu.mjs';
 import { VARSAYILAN_SES, acikMi, sesDuzeyi } from '../src/muzik.js';
+import tr from '../src/diller/tr.js';
 
 const kok = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const oku = dosya => readFile(path.join(kok, dosya), 'utf8');
 
 /* ---- 1. Sıra ve yazılar (tarayıcısız) ---- */
 
-test('standart üst çubuk: dört düğme, bu sırayla, bu yazılarla', async () => {
+test('standart üst çubuk: dört düğme + dil, bu sırayla, bu yazılarla', async () => {
   const html = await oku('index.html');
   const cubuk = html.match(/<div class="home-actions" id="home-actions">([\s\S]*?)<\/div>/)?.[1];
   assert.ok(cubuk, 'giriş ekranında #home-actions çubuğu olmalı');
   const sira = [...cubuk.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
   assert.deepEqual(
     sira,
-    ['home-site', 'home-sound', 'home-muzik', 'home-help'],
-    'standart sıra: ← josephuz.com · Ses · Müzik · Kontroller F1',
+    ['home-site', 'home-sound', 'home-muzik', 'home-help', 'dil'],
+    'standart sıra: ← josephuz.com · Ses · Müzik · Kontroller F1 · dil',
   );
   assert.ok(cubuk.includes('← <span class="site-name">josephuz.com</span>'), 'bağlantı yazısı "← josephuz.com"');
-  assert.ok(cubuk.includes('Ses: açık'), 'ses düğmesi "Ses: açık / kapalı" yazar');
-  assert.ok(cubuk.includes('Müzik: açık'), 'müzik düğmesi "Müzik: açık / kapalı" yazar');
-  assert.ok(cubuk.includes('Kontroller <kbd>F1</kbd>'), 'yardım düğmesi "Kontroller F1" (eski "Kısayollar" değil)');
+  assert.ok(cubuk.includes('data-i18n="ses.acik"') && tr['ses.acik'] === 'Ses: açık', 'ses düğmesi "Ses: açık / kapalı" yazar');
+  assert.ok(
+    cubuk.includes('data-i18n="muzik.acik"') && tr['muzik.acik'] === 'Müzik: açık',
+    'müzik düğmesi "Müzik: açık / kapalı" yazar',
+  );
+  assert.ok(
+    cubuk.includes('id="home-help" data-i18n-html="cubuk.kontroller"') && tr['cubuk.kontroller'] === 'Kontroller <kbd>F1</kbd>',
+    'yardım düğmesi "Kontroller F1" (eski "Kısayollar" değil)',
+  );
+  assert.ok(cubuk.includes('<button id="dil"></button>'), 'dil düğmesi öbürleriyle aynı düğme; yazısını dilDugmesi yazar');
   for (const eski of ['Kısayollar', 'Nasıl oynanır', 'Ses açık', 'Ses kapalı', 'F1 · ']) {
     assert.ok(!cubuk.includes(eski), `üst çubukta "${eski}" kullanılmaz`);
   }
@@ -51,12 +60,18 @@ test('standart Esc menüsü: DEVAM ET → · Kontroller F1 · Ses · Müzik (+s�
   assert.deepEqual(
     sira,
     ['resume', 'menu-help', 'sound', 'muzik', 'muzik-row', 'muzik-ses', 'muzik-yuzde', 'quality', 'leave'],
-    'Esc menüsünün standart sırası (oyuna özgü "Grafik" standart dörtlünün ardında)',
+    'Esc menüsünün standart sırası (oyuna özgü "Grafik" standart dörtlünün ardında; dil düğmesi yok)',
   );
-  assert.ok(menu.includes('DEVAM ET <span>→</span>'), 'ilk düğme "DEVAM ET →"');
-  assert.ok(menu.includes('Kontroller <kbd>F1</kbd>'), 'ikinci düğme "Kontroller F1"');
-  assert.ok(menu.includes('Ses: açık') && menu.includes('Müzik: açık'), 'ses ve müzik yazıları standart');
-  assert.ok(menu.includes("josephuz.com'a dön"), "son satır \"josephuz.com'a dön\" bağlantısı");
+  assert.ok(
+    menu.includes('data-i18n-html="menu.devam"') && tr['menu.devam'] === 'DEVAM ET <span>→</span>',
+    'ilk düğme "DEVAM ET →"',
+  );
+  assert.ok(menu.includes('id="menu-help" data-i18n-html="cubuk.kontroller"'), 'ikinci düğme "Kontroller F1"');
+  assert.ok(menu.includes('data-i18n="ses.acik"') && menu.includes('data-i18n="muzik.acik"'), 'ses ve müzik yazıları standart');
+  assert.ok(
+    menu.includes('data-i18n="cubuk.site"') && tr['cubuk.site'] === "josephuz.com'a dön",
+    "son satır \"josephuz.com'a dön\" bağlantısı",
+  );
   // Müzik sürgüsü Müzik düğmesinin **altında** olmalı: sırada hemen ardından gelir (yukarıdaki deepEqual) ve
   // gerçekten bir sürgüdür.
   assert.ok(/id="muzik-ses" type="range"/.test(menu), 'müzik ses düzeyi bir sürgü (range) olmalı');
@@ -78,13 +93,21 @@ test('ses ve müzik düğmeleri iki yerde de aynı durumu gösterir, ayar taray�
   for (const sec of ['#home-sound', '#sound', '#home-muzik', '#muzik']) {
     assert.ok(screens.includes(`'${sec}'`), `syncMenu ${sec} düğmesini de tazelemeli`);
   }
-  assert.ok(/'Ses: ' \+ \(game\.sound \? 'açık' : 'kapalı'\)/.test(screens), 'yazı "Ses: açık / kapalı" olmalı');
   assert.ok(
-    /'Müzik: ' \+ \(game\.muzik\.acik \? 'açık' : 'kapalı'\)/.test(screens),
+    screens.includes("t(game.sound ? 'ses.acik' : 'ses.kapali')") && tr['ses.kapali'] === 'Ses: kapalı',
+    'yazı "Ses: açık / kapalı" olmalı',
+  );
+  assert.ok(
+    screens.includes("t(game.muzik.acik ? 'muzik.acik' : 'muzik.kapali')") && tr['muzik.kapali'] === 'Müzik: kapalı',
     'yazı "Müzik: açık / kapalı" olmalı',
   );
   // Çevrim içinde "Ana menü" yerine "Odadan çık".
-  assert.ok(/game\.online \? 'Odadan çık' : 'Ana menü'/.test(screens), 'çevrim içi maçta düğme "Odadan çık" yazar');
+  assert.ok(
+    screens.includes("$('#leave').textContent = t(game.online ? 'lobi.cik' : 'menu.anaMenu')") &&
+      tr['lobi.cik'] === 'Odadan çık' &&
+      tr['menu.anaMenu'] === 'Ana menü',
+    'çevrim içi maçta düğme "Odadan çık" yazar',
+  );
   assert.ok(screens.includes("localStorage.setItem('kale.sound'"), 'efekt sesi kale.sound anahtarında saklanır');
   assert.ok(muzik.includes("'kale.muzik'"), 'müzik ayarı kale.muzik anahtarında saklanır');
   assert.ok(muzik.includes("'kale.muzik.ses'"), 'müzik sesi kale.muzik.ses anahtarında saklanır');
@@ -151,7 +174,7 @@ test('standart çubuk dört ekran ölçüsünde de tek satır, taşmıyor, oyun 
         deviceScaleFactor: mobil ? 2 : 1,
       });
       const page = await ctx.newPage();
-      await page.goto(adres + '/?test');
+      await page.goto(adres + '/?test&dil=tr');
       await page.waitForFunction(() => !!window.__kaleTasima);
       await page.waitForTimeout(400);
       // Dikey tutuşta oyun "Telefonu yan çevir" perdesini gösterir; çubuk arkasında durur, ölçülebilsin diye
@@ -167,8 +190,8 @@ test('standart çubuk dört ekran ölçüsünde de tek satır, taşmıyor, oyun 
 
       assert.deepEqual(
         sira,
-        ['home-site', 'home-sound', 'home-muzik', 'home-help'],
-        `${ad}: standart dörtlü bu sırayla olmalı (okunan: ${sira.join(', ')})`,
+        ['home-site', 'home-sound', 'home-muzik', 'home-help', 'dil'],
+        `${ad}: standart dörtlü + dil bu sırayla olmalı (okunan: ${sira.join(', ')})`,
       );
       assert.equal(satir, 1, `${ad}: standart araç çubuğu tek satırda kalmalı (düğmeler alt satıra kaydı)`);
       assert.ok(
@@ -203,7 +226,7 @@ test('standart Esc menüsü dar yatay telefonda kaydırmadan sığar, pencere d�
         deviceScaleFactor: mobil ? 2 : 1,
       });
       const page = await ctx.newPage();
-      await page.goto(adres + '/?test');
+      await page.goto(adres + '/?test&dil=tr');
       await page.waitForFunction(() => !!window.__kaleTasima);
       await page.click('#solo');
       await page.waitForFunction(() => document.body.classList.contains('playing'));

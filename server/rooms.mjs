@@ -34,7 +34,8 @@ export function createRooms() {
   const send = (c, m) => {
     if (c?.ws?.readyState === 1 && c.ws.bufferedAmount < 256 * 1024) c.ws.send(JSON.stringify(m));
   };
-  const error = (c, message) => send(c, { type: 'error', message });
+  // Dil standardı: kod dil bağımsızdır, istemci t('sunucu.' + kod) gösterir; mesaj Türkçe yedektir.
+  const error = (c, kod, message) => send(c, { type: 'error', kod, message });
   const seated = r => r.seats.map((t, i) => (t && clients.get(t) ? i : -1)).filter(i => i >= 0);
   const lobby = r => ({
     type: 'lobby',
@@ -288,7 +289,7 @@ export function createRooms() {
           m = r ? { type: 'join', code: r.code } : { type: 'create', difficulty: m.difficulty };
         }
         if (m.type === 'create') {
-          if (rooms.size >= 32) return error(c, 'Oda sınırına ulaşıldı.');
+          if (rooms.size >= 32) return error(c, 'oda.sinir', 'Oda sınırına ulaşıldı.');
           leave(c);
           const code = newCode();
           const r = {
@@ -309,13 +310,13 @@ export function createRooms() {
         }
         if (m.type === 'join') {
           const r = rooms.get(normalizeCode(m.code));
-          if (!r) return error(c, 'Böyle bir oda yok');
+          if (!r) return error(c, 'oda.yok', 'Böyle bir oda yok');
           if (c.room === r.code) {
             broadcast(r);
             return;
           }
           const slot = r.seats.findIndex(t => !t);
-          if (slot < 0) return error(c, 'Oda dolu');
+          if (slot < 0) return error(c, 'oda.dolu', 'Oda dolu');
           leave(c);
           occupy(r, c, slot);
           broadcast(r);
@@ -325,7 +326,7 @@ export function createRooms() {
         const r = rooms.get(c.room);
         if (!r) return;
         if (m.type === 'seat' && r.state === 'lobby') {
-          if (!Number.isInteger(m.slot) || !occupy(r, c, m.slot)) error(c, 'Bu koltuğa geçilemiyor.');
+          if (!Number.isInteger(m.slot) || !occupy(r, c, m.slot)) error(c, 'koltuk.gecilemez', 'Bu koltuğa geçilemiyor.');
           else broadcast(r);
         }
         const host = r.host === c.token;
@@ -339,7 +340,7 @@ export function createRooms() {
         if (m.type === 'move' && host && r.state === 'lobby') {
           const { from, to } = m,
             ok = n => Number.isInteger(n) && n >= 0 && n < r.seats.length;
-          if (!ok(from) || !ok(to) || from === to || !r.seats[from]) return error(c, 'Bu koltuğa geçilemiyor.');
+          if (!ok(from) || !ok(to) || from === to || !r.seats[from]) return error(c, 'koltuk.gecilemez', 'Bu koltuğa geçilemiyor.');
           const a = r.seats[from],
             b = r.seats[to];
           r.seats[to] = a;

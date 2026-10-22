@@ -25,7 +25,7 @@ test('yatay telefonda giriş ekranının oda düğmelerine dokunulabilir', { ski
       const { defaultBrowserType, ...cihaz } = devices[ad];
       const ctx = await browser.newContext(cihaz);
       const page = await ctx.newPage();
-      await page.goto(adres + '/?test');
+      await page.goto(adres + '/?test&dil=tr');
       await page.waitForFunction(() => !!window.__kaleTasima);
       await page.waitForTimeout(300);
       const sonuc = await page.evaluate(() => {

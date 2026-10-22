@@ -1,4 +1,5 @@
-import { DIFFICULTIES, DIFFICULTY_LABEL } from './config.js';
+import { DIFFICULTIES } from './config.js';
+import { t } from './dil.js';
 import { $, escapeHtml } from './html.js';
 import { paylasti } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
@@ -13,7 +14,8 @@ import { countItems } from './rules.js';
 const OVERLAYS = ['home', 'lobby', 'menu', 'shortcuts', 'results'];
 
 /** Oda ayar özeti (liste satırı ve lobi gözü): `5v5 · Normal`. */
-export const roomSummary = difficulty => '5v5 · ' + (DIFFICULTY_LABEL[difficulty] || 'Normal');
+export const roomSummary = difficulty =>
+  '5v5 · ' + t(DIFFICULTIES.includes(difficulty) ? 'zorluk.' + difficulty : 'zorluk.normal');
 /** Oda kodu girişi: büyük harf, boşluk / tire atılır, 4 harf + 1 rakamsa tire eklenir (`KPRT4` → `KPRT-4`). */
 export function normalizeCode(text) {
   const k = String(text || '')
@@ -51,7 +53,7 @@ export function createScreens(game, ui, input, actions) {
     if (!game.started) return;
     show(game.screen === 'menu' ? null : 'menu');
     syncMenu();
-    $('#online-note').textContent = game.online ? 'Çevrim içi maç menü açıkken devam eder.' : '';
+    $('#online-note').textContent = game.online ? t('menu.cevrimiciNot') : '';
   }
 
   // Ad: tarayıcı hatırlar ("Gezgin" eski varsayılandı, yok sayılır).
@@ -96,16 +98,14 @@ export function createScreens(game, ui, input, actions) {
     if (lobby.state === 'lobby' && game.screen === 'results') return;
     if (!isHost || lobby.state !== 'lobby') moving = null;
     if (moving !== null && !lobby.seats[moving]?.id) moving = null;
-    $('#lobby-eyebrow').textContent = 'ODA · ' + roomSummary(lobby.difficulty);
+    $('#lobby-eyebrow').textContent = t('lobi.goz', { ozet: roomSummary(lobby.difficulty) });
     $('#lobby-code').textContent = lobby.code;
-    $('#lobby-visibility').textContent = lobby.private ? 'ÖZEL ODA · yalnız kodla' : 'AÇIK ODA · listede görünür';
+    $('#lobby-visibility').textContent = t(lobby.private ? 'lobi.ozelOda' : 'lobi.acikOda');
     const people = lobby.seats.filter(s => s.id).length;
     $('#lobby-mode').textContent =
-      people +
-      ' insan · ' +
-      (lobby.seats.length - people) +
-      ' bot · ' +
-      (lobby.mode === 'pvp' ? 'PvP: iki takımda da oyuncu var' : 'Co-op: herkes aynı takımda');
+      t('lobi.kisiler', { insan: people, bot: lobby.seats.length - people }) +
+      ' · ' +
+      t(lobby.mode === 'pvp' ? 'lobi.pvp' : 'lobi.coop');
     for (const team of [0, 1]) {
       const root = $(team === 0 ? '#blue-seats' : '#red-seats');
       root.replaceChildren();
@@ -117,19 +117,19 @@ export function createScreens(game, ui, input, actions) {
         b.disabled = lobby.state !== 'lobby' || (!!s.id && !isHost);
         const name = document.createElement('span');
         name.className = 'seat-name';
-        name.textContent = s.id ? s.name : 'Bot · boş koltuk';
+        name.textContent = s.id ? s.name : t('lobi.bosKoltuk');
         b.append(name);
         const tags = [];
-        if (s.id && s.id === lobby.host) tags.push('kuran');
-        if (me) tags.push('sen');
-        if (s.id && !s.online) tags.push('koptu');
-        for (const t of tags) {
+        if (s.id && s.id === lobby.host) tags.push(t('lobi.kuran'));
+        if (me) tags.push(t('lobi.sen'));
+        if (s.id && !s.online) tags.push(t('lobi.koptu'));
+        for (const etiket of tags) {
           const tag = document.createElement('small');
           tag.className = 'seat-tag';
-          tag.textContent = t;
+          tag.textContent = etiket;
           b.append(tag);
         }
-        if (!s.id) b.insertAdjacentHTML('beforeend', '<em class="seat-sit">Buraya otur</em>');
+        if (!s.id) b.insertAdjacentHTML('beforeend', '<em class="seat-sit">' + t('lobi.otur') + '</em>');
         b.onclick = () => seatClick(s);
         if (isHost && s.id && lobby.state === 'lobby') {
           b.draggable = true;
@@ -163,8 +163,8 @@ export function createScreens(game, ui, input, actions) {
       b.disabled = !isHost;
     }
     $('#lobby-start').disabled = !isHost;
-    $('#lobby-start').textContent = isHost ? 'MAÇI BAŞLAT ↗' : 'Kuranın başlatması bekleniyor';
-    $('#lobby-status').textContent = moving !== null ? 'Taşınacak koltuğa tıkla' : '';
+    $('#lobby-start').textContent = t(isHost ? 'lobi.baslat' : 'lobi.bekleniyor');
+    $('#lobby-status').textContent = moving !== null ? t('lobi.tasi') : '';
     if (lobby.state === 'lobby') {
       game.started = false;
       show('lobby');
@@ -196,17 +196,19 @@ export function createScreens(game, ui, input, actions) {
     input.unlock();
     show('results');
     const won = w.mode === 'solo' ? w.winner === me.id : w.winnerTeam === me.team;
-    $('#result-title').textContent = won ? 'Hazine sizin!' : 'Bir sonraki sefer…';
-    $('#result-summary').textContent =
-      (w.mode === 'solo' ? w.players[w.winner].name : ui.teamName(w.winnerTeam)) +
-      ' kazandı · ' +
-      Math.floor(w.time / 60) +
-      ' dk ' +
-      Math.floor(w.time % 60) +
-      ' sn';
+    $('#result-title').textContent = t(won ? 'karne.kazandik' : 'karne.kaybettik');
+    $('#result-summary').textContent = t('karne.ozet', {
+      kim: w.mode === 'solo' ? w.players[w.winner].name : ui.teamName(w.winnerTeam),
+      dk: Math.floor(w.time / 60),
+      sn: Math.floor(w.time % 60),
+    });
     const rows = [...w.players].sort((a, b) => countItems(w, b.id) - countItems(w, a.id));
     $('#result-table').innerHTML =
-      '<table><thead><tr><th>Oyuncu</th><th>Eşya</th><th>Çalma</th><th>İsabet</th><th>Nakavt</th><th>Sersemletme</th><th>Altın</th><th>Ağaç</th><th>Kaçınma</th></tr></thead><tbody>' +
+      '<table><thead><tr>' +
+      ['oyuncu', 'esya', 'calma', 'isabet', 'nakavt', 'sersem', 'altin', 'agac', 'kacinma']
+        .map(k => '<th>' + t(`karne.${k}`) + '</th>')
+        .join('') +
+      '</tr></thead><tbody>' +
       rows
         .map(
           p =>
@@ -226,24 +228,24 @@ export function createScreens(game, ui, input, actions) {
       '</tbody></table>';
     // Çevrim içi: herkes LOBİYE DÖN (oda sunucuda lobiye döndü, kuran yeniden başlatır); tek başına: Yeni maç.
     $('#again').hidden = false;
-    $('#again').textContent = game.online ? 'LOBİYE DÖN' : 'Yeni maç';
-    $('#result-home').textContent = game.online ? 'Odadan çık' : 'Ana menü';
+    $('#again').textContent = t(game.online ? 'karne.lobi' : 'karne.yeni');
+    $('#result-home').textContent = t(game.online ? 'lobi.cik' : 'menu.anaMenu');
   }
 
   // Giriş ekranı (oda standardı §1): ADIN · tek başına seçimleri + TEK BAŞINA ↗ · ÇEVRİM İÇİ (HIZLI KATIL → / ODA KUR /
   // ODAYA KATIL + kod satırı, durum) · AÇIK ODALAR. Oda kur hemen kurar (herkese açık, seçili zorlukla); özel/açık ve
   // zorluk lobide kuranın ayarıdır.
   $('#solo').onclick = actions.startSolo;
-  $('#create').onclick = () => actions.connectAction('create', { difficulty }, 'Oda kuruluyor…');
+  $('#create').onclick = () => actions.connectAction('create', { difficulty }, t('durum.kuruluyor'));
   // Açık odalar: sunucu giriş ekranındakilere listeyi kendiliğinden gönderir (bkz. server/rooms.mjs). Satıra basan
   // kodsuz katılır; hızlı katıl en uygun odaya oturtur, yoksa seçili zorlukla herkese açık oda kurar.
-  $('#quick').onclick = () => actions.connectAction('quick', { difficulty }, 'Oda aranıyor…');
+  $('#quick').onclick = () => actions.connectAction('quick', { difficulty }, t('durum.araniyor'));
   function renderRooms(list) {
     const root = $('#room-list');
     root.replaceChildren();
     $('#room-count').textContent = String(list.length);
     if (!list.length) {
-      root.innerHTML = '<div class="rooms-empty">Şu an açık oda yok. Hızlı katıl yeni bir oda kurar.</div>';
+      root.innerHTML = '<div class="rooms-empty">' + t('ana.odaYok') + '</div>';
       return;
     }
     for (const r of list) {
@@ -257,19 +259,17 @@ export function createScreens(game, ui, input, actions) {
         '<span><b></b><small>' +
         escapeHtml(roomSummary(r.difficulty)) +
         ' · ' +
-        r.players +
-        '/' +
-        r.seats +
-        ' oyuncu</small></span><i class="room-state' +
+        escapeHtml(t('oda.oyuncu', { n: r.players, s: r.seats })) +
+        '</small></span><i class="room-state' +
         (playing ? ' playing' : '') +
         '">' +
-        (playing ? 'MAÇTA' : 'LOBİDE') +
+        t(playing ? 'oda.macta' : 'oda.lobide') +
         '</i><em>' +
-        (full ? 'DOLU' : 'KATIL →') +
+        t(full ? 'oda.dolu' : 'oda.katil') +
         '</em>';
-      b.querySelector('b').textContent = r.host || 'Oyuncu';
-      b.title = playing ? 'Maç sürüyor: boş koltuktaki botun yerine geçersin.' : 'Lobiye girersin, kuran başlatır.';
-      b.onclick = () => actions.connectAction('join', { code: r.code }, 'Odaya bağlanıyor…');
+      b.querySelector('b').textContent = r.host || t('oda.kuranYok');
+      b.title = t(playing ? 'oda.mactaIpucu' : 'oda.lobiIpucu');
+      b.onclick = () => actions.connectAction('join', { code: r.code }, t('durum.baglaniyor'));
       root.append(b);
     }
   }
@@ -284,10 +284,10 @@ export function createScreens(game, ui, input, actions) {
     const code = normalizeCode($('#room-code').value);
     $('#room-code').value = code;
     if (code.replace(/[^A-Z]/g, '').length < 4) {
-      $('#home-status-message').textContent = 'Oda kodunu yaz';
+      $('#home-status-message').textContent = t('ana.kodYaz');
       return;
     }
-    actions.connectAction('join', { code }, 'Odaya bağlanıyor…');
+    actions.connectAction('join', { code }, t('durum.baglaniyor'));
   };
   $('#room-code').oninput = e => {
     const el = e.target,
@@ -304,10 +304,10 @@ export function createScreens(game, ui, input, actions) {
       const b = $('#' + id);
       b.disabled = !up;
       b.classList.toggle('soon', !up);
-      b.title = up ? '' : 'Çok oyunculu yakında';
+      b.title = up ? '' : t('ana.yakindaBaslik');
       if (id !== 'join') {
         const tag = b.querySelector('.soon-tag');
-        if (!up && !tag) b.insertAdjacentHTML('beforeend', '<em class="soon-tag">YAKINDA</em>');
+        if (!up && !tag) b.insertAdjacentHTML('beforeend', '<em class="soon-tag">' + t('ana.yakinda') + '</em>');
         else if (up) tag?.remove();
       }
     }
@@ -331,8 +331,8 @@ export function createScreens(game, ui, input, actions) {
     paylasti(); // ölçüm: lobi linki paylaşıldı
     try {
       await navigator.clipboard.writeText(url);
-      b.textContent = 'Link kopyalandı';
-      setTimeout(() => (b.textContent = 'Linki kopyala'), 2000);
+      b.textContent = t('lobi.linkKopyalandi');
+      setTimeout(() => (b.textContent = t('lobi.linkKopyala')), 2000);
     } catch {
       $('#lobby-status').textContent = url;
     }
@@ -355,18 +355,19 @@ export function createScreens(game, ui, input, actions) {
   /**
    * STANDART üst araç çubuğu ve Esc menüsü: Ses ve Müzik düğmeleri iki yerdedir (giriş ekranının sağ üst çubuğu
    * ve duraklatma menüsü). Tek bir yazıcı ikisini birden tazeler, böylece hangisinden değiştirilirse
-   * değiştirilsin ikisi aynı durumu gösterir. Yazılar birebir standarttaki gibi: "Ses: açık" / "Müzik: kapalı".
+   * değiştirilsin ikisi aynı durumu gösterir. Yazılar birebir standarttaki gibi: "Ses: açık" / "Müzik: kapalı"
+   * (sözlükte ses.acik / ses.kapali / muzik.acik / muzik.kapali).
    */
   const SES_DUGMELERI = ['#home-sound', '#sound'],
     MUZIK_DUGMELERI = ['#home-muzik', '#muzik'];
   function syncMenu() {
-    for (const sec of SES_DUGMELERI) $(sec).textContent = 'Ses: ' + (game.sound ? 'açık' : 'kapalı');
-    for (const sec of MUZIK_DUGMELERI) $(sec).textContent = 'Müzik: ' + (game.muzik.acik ? 'açık' : 'kapalı');
+    for (const sec of SES_DUGMELERI) $(sec).textContent = t(game.sound ? 'ses.acik' : 'ses.kapali');
+    for (const sec of MUZIK_DUGMELERI) $(sec).textContent = t(game.muzik.acik ? 'muzik.acik' : 'muzik.kapali');
     const yuzde = Math.round(game.muzik.ses * 100);
     $('#muzik-ses').value = String(yuzde);
-    $('#muzik-yuzde').textContent = '%' + yuzde;
+    $('#muzik-yuzde').textContent = t('menu.yuzde', { n: yuzde });
     // Çevrim içi maçta menüden çıkmak odadan da çıkmaktır; yazı bunu söylesin.
-    $('#leave').textContent = game.online ? 'Odadan çık' : 'Ana menü';
+    $('#leave').textContent = t(game.online ? 'lobi.cik' : 'menu.anaMenu');
   }
   function setSound(on) {
     game.sound = on;

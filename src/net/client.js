@@ -1,3 +1,4 @@
+import { t } from '../dil.js';
 import { serverUrl } from '../platform.js';
 
 /**
@@ -36,7 +37,7 @@ export class Network {
       } catch {}
       const timeout = setTimeout(() => {
         ws.close();
-        reject(new Error('Sunucuya bağlanılamadı.'));
+        reject(new Error(t('ag.baglanilamadi')));
       }, 8000);
       ws.onopen = () => {
         this.online = true;
@@ -61,7 +62,7 @@ export class Network {
           this.hooks.start(m.world);
         } else if (m.type === 'snapshot') {
           this.hooks.snapshot(m.world);
-        } else if (m.type === 'error') this.hooks.error(m.message);
+        } else if (m.type === 'error') this.hooks.error(m.message, m.kod);
         else if (m.type === 'pong') this.rtt = Math.round(performance.now() - m.at);
         else if (m.type === 'online') this.hooks.online?.(m.n);
         else if (m.type === 'rooms') this.hooks.rooms?.(m.list);
@@ -71,10 +72,10 @@ export class Network {
         clearTimeout(timeout);
         this.online = false;
         this.connecting = null;
-        reject(new Error('Bağlantı kapandı.'));
+        reject(new Error(t('ag.kapandi')));
         this.hooks.ready?.(false);
         if (this.active) {
-          this.hooks.status?.('Bağlantı koptu · yeniden bağlanıyor…');
+          this.hooks.status?.(t('ag.koptu'));
           this.retry = setTimeout(() => this.connect(this.name).catch(() => {}), this.room ? 1500 : 15000);
         }
       };

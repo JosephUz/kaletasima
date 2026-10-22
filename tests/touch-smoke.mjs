@@ -41,7 +41,7 @@ try {
     await touch('touchEnd', []);
   };
 
-  await page.goto(url + '/?test=1&app');
+  await page.goto(url + '/?test=1&app&dil=tr');
   await page.waitForFunction(() => !!window.__kaleTasima);
   assert.ok(await game(() => document.body.classList.contains('touch')), 'dokunmatik kip açılmalı');
   // Uygulama kipi: çok oyunculu kapalı, sunucuya bağlantı yok.

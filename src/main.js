@@ -1,3 +1,4 @@
+import { DILLER, t } from './dil.js';
 import { gorunurAlanaKilitle } from './gorunur-alan.js';
 import { $ } from './html.js';
 import { createInput } from './input.js';
@@ -35,7 +36,7 @@ export function start() {
   if (touch) {
     // Telefonda skor tablosu kapalı başlar (Skor düğmesi açar), düğme yazılarında klavye kısayolu yok.
     $('#score-panel').hidden = true;
-    $('#pause').textContent = 'Menü';
+    $('#pause').textContent = t('oyun.menuDokunmatik');
   }
   const game = {
     world: createWorld(),
@@ -148,27 +149,22 @@ export function start() {
     for (const e of list) {
       if (e.type === 'claim')
         ui.toast(
-          (w.mode === 'solo' ? w.players[e.player].name : ui.teamName(w.players[e.player].team)) +
-            ' ' +
-            targetScore(w) +
-            ' eşyaya ulaştı · 60 saniye!',
+          t('bildirim.hedef', {
+            kim: w.mode === 'solo' ? w.players[e.player].name : ui.teamName(w.players[e.player].team),
+            n: targetScore(w),
+          }),
         );
       if (e.player === hero().id || e.victim === hero().id || e.type === 'treehit') {
         game.view.event(e);
         if (['pickup', 'deposit', 'coin', 'hit', 'treehit'].includes(e.type)) ui.tone(e.type === 'coin' ? 750 : 350);
-        if (e.type === 'rearm') ui.toast('Kasadan yeni sopa aldın.');
+        if (e.type === 'rearm') ui.toast(t('bildirim.sopa'));
         if (e.type === 'stairs' && e.player === hero().id)
-          ui.toast(
-            (e.to > e.from ? '↑ Yukarı · ' : '↓ Aşağı · ') +
-              (e.to + 1) +
-              '. kata ' +
-              (e.to > e.from ? 'çıkıyorsun' : 'iniyorsun'),
-          );
+          ui.toast(t(e.to > e.from ? 'bildirim.yukari' : 'bildirim.asagi', { n: e.to + 1 }));
         if (e.type === 'knockout' && e.victim === hero().id)
-          ui.toast('Canın bitti · Bayıldın. Süre bitince kalende doğacaksın.');
+          ui.toast(t('bildirim.bayildin'));
         if (e.type === 'knockout' && e.player === hero().id)
-          ui.toast(w.players[e.victim].name + ' bayıldı · Kalesi korumasız!');
-        if (e.type === 'deposit') ui.toast('Eşya kalende saklandı.');
+          ui.toast(t('bildirim.bayildi', { ad: w.players[e.victim].name }));
+        if (e.type === 'deposit') ui.toast(t('bildirim.saklandi'));
       }
     }
     if (w.winner !== null && game.screen !== 'results') {
@@ -215,7 +211,7 @@ export function start() {
   } catch {}
   let pendingJoin = networked ? normalizeCode(new URLSearchParams(location.search).get('oda')) || savedRoom : null;
   const homeStatus = text => ($('#home-status-message').textContent = text);
-  if (pendingJoin) homeStatus(pendingJoin === savedRoom ? 'Odaya geri bağlanıyor…' : 'Odaya bağlanıyor…');
+  if (pendingJoin) homeStatus(t(pendingJoin === savedRoom ? 'durum.geriBaglaniyor' : 'durum.baglaniyor'));
 
   const net = new Network({
     welcome: room => {
@@ -240,7 +236,10 @@ export function start() {
     rooms: screens.renderRooms,
     start: w => launch(w, true),
     snapshot: receive,
-    error: message => {
+    // Sunucu hatası: kodu sözlükte varsa etkin dilde (sunucu.<kod>), yoksa sunucunun Türkçe mesajı.
+    error: (mesaj, kod) => {
+      const anahtar = 'sunucu.' + kod,
+        message = kod && anahtar in DILLER.tr ? t(anahtar) : mesaj;
       ui.toast(message);
       homeStatus(message);
       $('#lobby-status').textContent = message;
@@ -253,8 +252,8 @@ export function start() {
     },
     online: n => {
       const el = $('#home-online');
-      el.textContent = n > 0 ? '● ' + n + ' çevrim içi' : '';
-      el.title = 'Siteyi şu an açık tutan sekme sayısı';
+      el.textContent = n > 0 ? t('ana.cevrimiciSayi', { n }) : '';
+      el.title = t('ana.cevrimiciBaslik');
     },
     ready: up => {
       screens.setServer(up);
@@ -263,7 +262,7 @@ export function start() {
   });
   game.net = net;
   /** Çevrim içi düğmeler: durum satırı (`Oda aranıyor…` / `Oda kuruluyor…` / `Odaya bağlanıyor…`) lobi gelince ya da hata olunca değişir. */
-  async function connectAction(type, body, statusText = 'Odaya bağlanıyor…') {
+  async function connectAction(type, body, statusText = t('durum.baglaniyor')) {
     if (!networked) return;
     homeStatus(statusText);
     try {
@@ -338,7 +337,7 @@ export function start() {
         game.quality--;
         game.view.setQuality(game.quality);
         slowTime = 0;
-        ui.toast('Akıcı oyun için grafik kalitesi azaltıldı.');
+        ui.toast(t('bildirim.grafik'));
       }
     } else slowTime = 0;
   }

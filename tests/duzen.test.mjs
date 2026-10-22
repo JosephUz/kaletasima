@@ -27,7 +27,7 @@ test('yatay telefonda oyun ekranı sayfayı yatayda kaydırmaz', { skip: atla },
       const { defaultBrowserType, ...cihaz } = devices[ad];
       const ctx = await browser.newContext(cihaz);
       const page = await ctx.newPage();
-      await page.goto(adres + '/?test');
+      await page.goto(adres + '/?test&dil=tr');
       await page.waitForFunction(() => !!window.__kaleTasima);
       await page.click('#solo');
       await page.waitForFunction(() => document.body.classList.contains('playing'));

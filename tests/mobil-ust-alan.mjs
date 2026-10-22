@@ -172,7 +172,7 @@ try {
       page.on('console', e => {
         if (e.type() === 'error') hatalar.push(e.text());
       });
-      await page.goto(sunucu.adres + '/?test');
+      await page.goto(sunucu.adres + '/?test&dil=tr');
       await page.waitForFunction(() => !!window.__kaleTasima && !document.querySelector('#home').hidden);
       await page.waitForTimeout(900);
 

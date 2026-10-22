@@ -31,7 +31,6 @@ export const RULES = Object.freeze({
 
 /** Kale: üç katlı tek salon (katlarda oda yok). Ön yüzde zemin katta tek kapı, arkada tek merdiven. */
 export const CASTLE = Object.freeze({ halfX: 10.5, halfZ: 12, height: 3.8, floors: 3, door: 3, stairZ: 9.7 });
-export const FLOOR_NAMES = ['Zemin kat', 'Orta kat', 'Üst kat'];
 /** Kat geçişi süresi (sn): oyuncu merdivende kalır, görünüm karakteri ve kamerayı iki kat arasında kaydırır. */
 export const CLIMB_TIME = 0.8;
 
@@ -43,7 +42,6 @@ export const ISO = Object.freeze({ half: 14, dist: 70, elevation: 0.62, aimRange
 
 /** Zorluk: kolay / normal'de botlar eşyalarını hep 1. kata (zemin) koyar; zor'da üç kata dağıtır ve ağaçtan daha çok altın düşürür. */
 export const DIFFICULTIES = ['easy', 'normal', 'hard'];
-export const DIFFICULTY_LABEL = { easy: 'Kolay', normal: 'Normal', hard: 'Zor' };
 
 export const COLORS = [
   '#56b9c6',
