@@ -22,7 +22,8 @@ const gez = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDir
 const dosyalar = [path.join(kok, 'index.html'), ...gez(src)].filter(f => fs.existsSync(f) && !f.endsWith(path.join('src', 'dil.js')));
 const TURKCE = /[çğıöşüÇĞİÖŞÜ]/;
 const yorumsuz = (s, html) => html ? s.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' ')) : s.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/.*$/gm, (m, a) => a + ' '.repeat(m.length - a.length));
-const izinli = m => izin.some(i => m.includes(i)) && !TURKCE.test(izin.reduce((s, i) => s.split(i).join(''), m));
+const izinUzun = [...izin].sort((a, b) => b.length - a.length); // uzun ad önce: 'Çiftçi Rıza', 'Çiftçi'den önce silinir
+const izinli = m => izin.some(i => m.includes(i)) && !TURKCE.test(izinUzun.reduce((s, i) => s.split(i).join(''), m));
 
 for (const f of dosyalar) {
   const html = f.endsWith('.html'), ham = fs.readFileSync(f, 'utf8'), rel = path.relative(kok, f);
@@ -31,7 +32,8 @@ for (const f of dosyalar) {
   if (html) s = s.replace(/(<[^>]*\sdata-i18n(?:-html)?="[^"]+"[^>]*>)([^<]*)/g, (m, a, b) => a + b.replace(/[^\n]/g, ' '))
     .replace(/<[^>]*>/g, tag => tag.replace(/\s(title|placeholder|aria-label|content|alt)="[^"]*"/g, (m, ad) => tag.includes(`data-i18n-${ad}=`) ? ` ${ad}=""` : m));
   for (const m of s.matchAll(/data-i18n(?:-[a-z-]+)?="([^"]+)"/g)) if (!(m[1] in tr)) sorun.push(`${rel}: sözlükte yok: ${m[1]}`);
-  for (const m of s.matchAll(/\bt\(\s*['"`]([\w.-]+)['"`]/g)) if (!(m[1] in tr)) sorun.push(`${rel}: sözlükte yok: ${m[1]}`);
+  // t('silah.' + id) gibi değişken anahtar (nokta ile biten önek) aranmaz.
+  for (const m of s.matchAll(/\bt\(\s*['"`]([\w.-]+)['"`]/g)) if (!m[1].endsWith('.') && !(m[1] in tr)) sorun.push(`${rel}: sözlükte yok: ${m[1]}`);
   const satirlar = s.split('\n');
   satirlar.forEach((satir, i) => {
     const adaylar = html
