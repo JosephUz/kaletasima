@@ -110,7 +110,7 @@ server.on('error', e => {
   process.exitCode = 1;
 });
 /**
- * WebSocket yalnız bilinen sayfalardan: aynı adres (yerelde, aynı ağda), *.josephuz.com (Cloudflare'deki statik site) ve
+ * WebSocket yalnız bilinen sayfalardan: aynı adres (yerelde, aynı ağda), *.josephuz.com (Cloudflare'deki statik site), itch.io (*.itch.zone, *.itch.io) ve
  * Android uygulaması (https://localhost). Origin'siz istemciler (testler, araçlar) kabul edilir.
  */
 function allowedOrigin(req) {
@@ -118,7 +118,7 @@ function allowedOrigin(req) {
   if (!origin) return true;
   try {
     const u = new URL(origin);
-    return u.host === req.headers.host || u.hostname === 'josephuz.com' || u.hostname.endsWith('.josephuz.com') || u.hostname === 'localhost';
+    return u.host === req.headers.host || u.hostname === 'josephuz.com' || u.hostname.endsWith('.josephuz.com') || u.hostname.endsWith('.itch.zone') || u.hostname.endsWith('.itch.io') || u.hostname === 'localhost';
   } catch {
     return false;
   }
