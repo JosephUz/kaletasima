@@ -3,7 +3,7 @@ const cogul = (n, tek, cok) => `${n} ${n === 1 ? tek : cok}`;
 
 export default {
   // Page
-  'sayfa.baslik': 'Kale Taşıma · Castle Treasure Hunt',
+  'sayfa.baslik': 'Kale Taşıma',
   'sayfa.aciklama': 'Three-story castles, hidden treasure and club fights around the golden tree.',
   'hata.webgl': 'The game could not start. Try an up-to-date Chrome or Edge with WebGL.',
   'dondur.baslik': 'Turn your phone sideways',
