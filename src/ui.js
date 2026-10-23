@@ -3,7 +3,7 @@ import { DIFFICULTIES, RULES, TEAM_COLORS } from './config.js';
 import { DIL, t } from './dil.js';
 import { $, escapeHtml } from './html.js';
 import { nearClubCrate } from './items.js';
-import { castleInvaded, countItems, dist, inside, targetScore } from './rules.js';
+import { KURAL, castleInvaded, countItems, dist, inside, targetScore } from './rules.js';
 
 /**
  * Oyun içi arayüz: altın, can, kale paneli, skor tablosu, konum, bağlama göre ipucu, bayılma bandı, kazanma geri sayımı,
@@ -90,7 +90,7 @@ export function createUI(game) {
     $('#home-status').textContent = castleInvaded(w, p.id) ? t('oyun.rakipIceride') : p.stun > 0 ? t('oyun.korumasiz') : '';
     $('#home-status').style.color = '#ffb08a';
     $('#buy').disabled = !game.started || !!game.screen || p.stun > 0 || !inside(p, own) || p.gold < RULES.price;
-    $('#buy-hint').textContent = t(inside(p, own) ? 'oyun.satinAl' : 'oyun.kaleneDon');
+    $('#buy-hint').textContent = t(inside(p, own) ? 'oyun.satinAl' : 'oyun.kaleneDon', KURAL);
     $('#mode-label').textContent =
       (w.mode === 'solo' ? t('oyun.modTek') : (w.mode === 'coop' ? 'Co-op' : 'PvP') + ' · 5v5') +
       ' · ' +

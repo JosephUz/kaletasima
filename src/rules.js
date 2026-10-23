@@ -11,6 +11,20 @@ export function inside(p, b, margin = 0) {
   const q = localPoint(b, p);
   return Math.abs(q.x) < CASTLE.halfX + margin && Math.abs(q.z) < CASTLE.halfZ + margin;
 }
+/**
+ * Metinlerdeki kural sayıları (sözlükte {hedef}, {takim}, {sure}, {fiyat}, {altin}, {can}, {uzat}, {enCok}): hep config'ten,
+ * metne sabit sayı yazılmaz.
+ */
+export const KURAL = Object.freeze({
+  hedef: RULES.target,
+  takim: RULES.teamTarget,
+  sure: RULES.winHold,
+  fiyat: RULES.price,
+  altin: RULES.stunGold,
+  can: RULES.hp,
+  uzat: RULES.stunExtend,
+  enCok: RULES.maxStun,
+});
 export const targetScore = w => (w.mode === 'solo' ? RULES.target : RULES.teamTarget);
 /** Kaledeki eşya sayısı. Çevrim içi istemcide sunucunun gönderdiği sayı (gizli eşyalar pakete girmez). */
 export function countItems(w, id) {

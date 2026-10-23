@@ -1,5 +1,6 @@
 import { COLORS, CASTLE } from '../config.js';
 import { t } from '../dil.js';
+import { KURAL } from '../rules.js';
 
 /** Efektler (GameView metotları olarak eklenir): parçacık patlamaları, uçan yazılar ve oyun olaylarının görüntüsü. */
 export const effectMethods = {
@@ -38,7 +39,7 @@ export const effectMethods = {
         e.extend
           ? t('efekt.sn', { n: e.extend })
           : e.extend === 0
-            ? t('efekt.enCok')
+            ? t('efekt.enCok', KURAL)
             : e.hp != null
               ? t('efekt.can')
               : t('efekt.pat'),

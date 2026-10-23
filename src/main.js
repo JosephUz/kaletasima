@@ -8,12 +8,21 @@ import { Network } from './net/client.js';
 import { createMuzik } from './muzik.js';
 import { macBasladi, macBitti, macKontrol } from './olcum.js';
 import { isApp, onlineEnabled } from './platform.js';
-import { targetScore } from './rules.js';
+import { KURAL, targetScore } from './rules.js';
 import { createScreens, normalizeCode } from './screens.js';
 import { enterFullscreen, touchDevice } from './touch.js';
 import { createUI } from './ui.js';
 import { GameView } from './view/gameview.js';
 import { createWorld, step } from './world.js';
+
+/** `data-kural` işaretli öğeler: dilUygula yer tutucuları boş bıraktı; sayılar config'ten (KURAL) doldurulur. */
+function kuralMetinleri() {
+  for (const el of document.querySelectorAll('[data-kural]')) {
+    if (el.dataset.i18n) el.textContent = t(el.dataset.i18n, KURAL);
+    if (el.dataset.i18nHtml) el.innerHTML = t(el.dataset.i18nHtml, KURAL);
+    if (el.dataset.i18nTitle) el.title = t(el.dataset.i18nTitle, KURAL);
+  }
+}
 
 /**
  * İstemci uygulaması: sahne, girdi, arayüz, ekranlar ve iki oyun kipi.
@@ -25,6 +34,7 @@ import { createWorld, step } from './world.js';
  * Çevrim içi kapalıysa (config.js → ONLINE, ör. uygulamada) sunucuya hiç bağlanılmaz; oda düğmeleri "Yakında" yazar.
  */
 export function start() {
+  kuralMetinleri();
   const canvas = $('#scene');
   const touch = touchDevice(),
     networked = onlineEnabled();
@@ -152,6 +162,7 @@ export function start() {
           t('bildirim.hedef', {
             kim: w.mode === 'solo' ? w.players[e.player].name : ui.teamName(w.players[e.player].team),
             n: targetScore(w),
+            sure: KURAL.sure,
           }),
         );
       if (e.player === hero().id || e.victim === hero().id || e.type === 'treehit') {
