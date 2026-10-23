@@ -1,6 +1,7 @@
 {
   "name": "kale-tasima",
   "version": "0.4.0",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "scripts": {

@@ -1,5 +1,11 @@
 # Kale Taşıma — 0.4
 
+> **EN:** Three-storey castles, hidden treasures and fights around the golden tree, in the browser (Three.js); solo against bots or 5v5 online rooms.
+>
+> **TR:** Tarayıcıda (Three.js) üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş; botlara karşı tek başına ya da 5v5 çevrim içi oda.
+
+**Play / Oyna:** https://kaletasima.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/kaletasima
+
 Üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş.
 
 ## Açılış
@@ -143,3 +149,18 @@ Three.js (MIT lisanslı) npm paketinden gelir: `node_modules/three/LICENSE`. Gö
 - Sopa fırlatma menzili 24 birimdir. Botlar gelen sopaya 350–550 ms sonra, her sopa için tek seferde %35 olasılıkla zıplamayı dener.
 
 - **Her bayılışta** (fırlatılan sopa ya da can bitmesi, kendi kalesinde de) 5 altın yere düşer; bayılanın altını yetmese de düşer (eksik tutar üretilir, bakiye eksiye inmez). Rakibi bayıltmak her zaman altın kazandırır; bunun dışında yeni altın yalnız altın ağacından çıkar. Kale içinde düşen altını yalnız o kalenin takımı toplar.
+
+## Lisans / License
+
+- **Kod:** [MIT](LICENSE), Copyright (c) 2026 JosephUz. Kodu kullanabilir, değiştirebilir, dağıtabilirsin.
+- **MIT dışında, tüm hakları saklıdır:** "Kale Taşıma" ve "JosephUz" adları; logo ve simgeler (`store/`, `android/app/src/main/res/`). Ayrıntı: [TRADEMARKS.md](TRADEMARKS.md).
+- **Fork'lar** başka bir ad ve logo kullanmalı, resmî sürüm olduğunu ima etmemeli.
+- **Üçüncü taraf:** [three.js](https://github.com/mrdoob/three.js) ve [ws](https://github.com/websockets/ws) npm bağımlılığıdır (ikisi de MIT), depoda değil, kendi lisanslarıyla gelir.
+
+> **In English:** The code is licensed under [MIT](LICENSE). The name "Kale Taşıma", the name "JosephUz", the logo and icons (`store/`, `android/app/src/main/res/`) are **not** covered by MIT and are all rights reserved; see [TRADEMARKS.md](TRADEMARKS.md). Forks must use a different name and logo.
+
+## Katkı / Contributing
+
+Hata bildirimi, öneri ve pull request'e açığız. Büyük bir değişiklikten önce bir [issue](https://github.com/JosephUz/kaletasima/issues) açıp konuşalım; oyunun dengesi ve yönü JosephUz'da. Kod ve oyun Türkçe: değişken, işlev ve mesaj adları Türkçe, çevresindeki kodun düzenine uy; `npm test` geçmeli. Gönderdiğin katkı bu deponun MIT lisansıyla yayımlanır. Müzik, ses ya da görsel eklemeden önce issue'da sor. Güvenlik açıklarını issue yerine [SECURITY.md](SECURITY.md)'deki yoldan bildir.
+
+> **In English:** Issues and pull requests are welcome; please open an issue before large changes. Contributions are accepted under the MIT license of this repository. Report security issues privately as described in [SECURITY.md](SECURITY.md).
