@@ -196,3 +196,4 @@ body.touch .score-stack .score-values span{display:inline;margin:0;font-size:9px
 #lobby .actions{flex-wrap:wrap}#lobby-start{min-width:0}
 @media(max-width:650px){.lobby-settings{grid-template-columns:1fr}.lobby-head{gap:10px;align-items:flex-start}}
 @media(max-height:560px){.lobby-settings{margin-top:8px;gap:10px}.lobby-settings .segmented button{padding:5px 0}.seat{min-height:36px;margin:5px 0}#lobby .actions{margin-top:12px}}
+@media(min-width:651px) and (min-height:561px) and (max-height:820px){.home{padding-top:calc(88px + var(--sp-top))}.home h2{font-size:clamp(34px,5.6vh,46px);margin:10px 0}.home-content>p{font-size:14px;line-height:1.6;margin:0 0 14px}.home .rule-cards{display:none}}
