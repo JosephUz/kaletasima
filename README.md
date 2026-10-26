@@ -4,7 +4,10 @@
 >
 > **TR:** Tarayıcıda (Three.js) üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş; botlara karşı tek başına ya da 5v5 çevrim içi oda.
 
-**Play / Oyna:** https://kaletasima.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/kaletasima
+**Play / Oyna:** https://kaletasima.josephuz.com · **Source / Kaynak:** https://github.com/JosephUz/kaletasima · **Android:** [Google Play](https://play.google.com/store/apps/details?id=com.josephuz.kaletasima)
+
+<p align="center"><img src="docs/ekran/1.jpg" alt="Kale Taşıma" width="100%"></p>
+<p align="center"><img src="docs/ekran/2.jpg" alt="Kale Taşıma" width="49%"> <img src="docs/ekran/3.jpg" alt="Kale Taşıma" width="49%"></p>
 
 Üç katlı kaleler, saklı hazineler ve altın ağacının çevresinde dövüş.
 
